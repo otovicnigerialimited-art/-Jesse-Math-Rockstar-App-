@@ -156,6 +156,73 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
         </div>
       </div>
 
+      {/* Styled Founder Story Section as requested */}
+      <section 
+        id="founder-story" 
+        style={{
+          backgroundColor: "#0b132b", 
+          color: "#fff", 
+          padding: "40px 20px", 
+          borderRadius: "15px", 
+          marginTop: "30px", 
+          marginBottom: "30px",
+          maxWidth: "800px", 
+          fontFamily: "'Segoe UI', sans-serif", 
+          boxShadow: "0 8px 24px rgba(0,0,0,0.6)", 
+          border: "3px solid #ff0055"
+        }}
+        className="mx-auto w-full"
+      >
+        <style>{`
+          .neon-text {
+              font-size: 1.5rem;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+              color: #fff;
+              text-shadow: 0 0 5px #fff, 0 0 10px #ff0055, 0 0 20px #ff0055, 0 0 40px #ff0055;
+              animation: neon-pulse 1.5s infinite alternate;
+              margin: 15px 0 0 0;
+          }
+          @keyframes neon-pulse {
+              from { text-shadow: 0 0 5px #fff, 0 0 10px #ff0055, 0 0 20px #ff0055, 0 0 40px #ff0055; }
+              to { text-shadow: 0 0 2px #fff, 0 0 5px #00d2ff, 0 0 10px #00d2ff, 0 0 20px #00d2ff, 0 0 30px #00d2ff; }
+          }
+        `}</style>
+        
+        <div style={{ textAlign: "center", marginBottom: "30px" }}>
+          <h2 style={{ fontSize: "2.5rem", color: "#00d2ff", textShadow: "0 0 10px #00d2ff", margin: "0 0 10px 0" }}>👑 Meet the Founder</h2>
+          <p className="neon-text">"We Are Young Genius" 👑</p>
+        </div>
+
+        <div style={{ lineHeight: "1.8", fontSize: "1.1rem", color: "#e0e0e0" }} className="space-y-4">
+          <p>Hello! I am <strong>Jesse</strong>, the founder and creator of <strong>Jesse Rock Math</strong>. This is my very first application published to the world to help kids everywhere fall in love with practicing maths.</p>
+          
+          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🎸 The Inspiration & Style</h3>
+          <p>My entire journey for this specific application was deeply inspired by the game <em>Times Tables Rock Stars (TT Rockstars)</em>. I wanted to build my own unique platform to help my peers sharpen their skills. You might also notice that the app layout features my favorite colors: <strong>Red and Blue</strong>!</p>
+
+          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🚀 The Evolution: From Scratch to Vibe Coding</h3>
+          <p>My coding adventure started when I was just 8 years old using Scratch. As the years grew, I completely self-explored and mastered <strong>vibe coding</strong>, which I believe is the next generation of software engineering. I am incredibly dedicated to my craft—I open my code editor up to <strong>5 times every single day</strong>, building up to <strong>3 or 4 applications a day</strong>! Before launching Jesse Rock Math, I had already built and experimented with over 50 applications.</p>
+
+          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🛠️ My Hardest Bug Fixed</h3>
+          <p>Being a developer isn't always easy. My absolute hardest bug happened right when I started vibe coding: <strong>handling and connecting the API logic correctly</strong>. It took a lot of independent problem-solving and exploring, but I didn't give up until the data connected perfectly!</p>
+
+          <h3 style={{ color: "#00d2ff", marginTop: "25px", borderBottom: "2px solid #ff0055", paddingBottom: "5px" }}>🛠️ Powered By</h3>
+          <p>This application was engineered using world-class professional developer tools. Special credit and thanks to the companies that made this possible:</p>
+          <ul style={{ listStyleType: "disc", marginLeft: "20px", color: "#fff" }} className="pl-4 space-y-1">
+            <li><strong>Google AI Studio:</strong> For providing the advanced Gemini family powerhouse models that drive the smart logic.</li>
+            <li><strong>GitHub:</strong> For hosting my project repository and managing my version control.</li>
+            <li><strong>Vercel:</strong> For providing the primary hosting domain and lightning-fast cloud deployment.</li>
+            <li><strong>Google AI Assistant:</strong> For providing continuous engineering support and guidance throughout my deployment journey.</li>
+          </ul>
+
+          <div style={{ color: "#00d2ff", marginTop: "30px", background: "rgba(255, 0, 85, 0.1)", padding: "15px", borderRadius: "8px", borderLeft: "4px solid #ff0055" }}>
+            <h3 style={{ margin: "0 0 10px 0", color: "#00d2ff", fontWeight: "bold" }}>💖 Special Thanks & Credits</h3>
+            <p style={{ margin: 0, color: "#e0e0e0" }}>A huge thank you to my <strong>Aunty Mercy</strong> for her amazing support, and a massive thank you to my <strong>Mum</strong> for letting me use her laptop to code all of my applications. I couldn't have built this without them!</p>
+          </div>
+        </div>
+      </section>
+
       {/* Grid: Timeline and Interactive Guestbook */}
       <div className="grid lg:grid-cols-12 gap-8">
         {/* Left Side: Timeline (7 cols) */}

@@ -52,6 +52,17 @@ const INITIAL_STATS: UserStats = {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer'>('home');
+  const backgroundEmojis = React.useMemo(() => {
+    const emojis = ['🎸', '👑', '🚀', '➕', '✖️', '🎸', '👑', '🚀', '➖', '➗'];
+    return Array.from({ length: 25 }).map((_, i) => ({
+      id: i,
+      char: emojis[i % emojis.length],
+      left: `${(i * 17) % 94 + 3}%`,
+      size: `${18 + (i * 7) % 20}px`,
+      duration: `${15 + (i * 9) % 20}s`,
+      delay: `${-((i * 13) % 25)}s`
+    }));
+  }, []);
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem('math_rockstar_stats');
     return saved ? JSON.parse(saved) : INITIAL_STATS;
@@ -370,7 +381,25 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-slate-950 text-slate-50 font-sans selection:bg-brand-primary selection:text-white">
+    <div className="min-h-screen flex bg-[#0b132b]/95 text-slate-50 font-sans selection:bg-brand-primary selection:text-white relative overflow-x-hidden">
+      {/* Dynamic Floating Emojis Background */}
+      <div className="floating-bg-container">
+        {backgroundEmojis.map((emoji) => (
+          <div
+            key={emoji.id}
+            className="floating-emoji-item"
+            style={{
+              left: emoji.left,
+              fontSize: emoji.size,
+              animationDuration: emoji.duration,
+              animationDelay: emoji.delay,
+            }}
+          >
+            {emoji.char}
+          </div>
+        ))}
+      </div>
+
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-40 w-72 glass border-r-0 transition-transform lg:translate-x-0 lg:static shrink-0",
@@ -383,7 +412,7 @@ export default function App() {
                 <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/30">
                   <Trophy className="text-white" size={22} />
                 </div>
-                <h1 className="text-2xl font-display font-black tracking-tight leading-tight">
+                <h1 className="text-2xl font-display font-black tracking-tight leading-tight wiggle-hover cursor-pointer">
                   JESSE ROCK<br />
                   <span className="text-brand-primary text-xl">MATH</span>
                 </h1>
@@ -477,7 +506,7 @@ export default function App() {
               <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-md shadow-brand-primary/20 shrink-0">
                 <Trophy className="text-white" size={16} />
               </div>
-              <span className="text-xs font-display font-black tracking-tight leading-none text-white">
+              <span className="text-xs font-display font-black tracking-tight leading-none text-white wiggle-hover cursor-pointer">
                 JESSE ROCK<br />
                 <span className="text-brand-primary text-xs">MATH 👑</span>
               </span>

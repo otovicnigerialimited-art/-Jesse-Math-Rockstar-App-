@@ -21,6 +21,7 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
   const [isGameOver, setIsGameOver] = useState(false);
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [activeFeedbackTag, setActiveFeedbackTag] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,6 +48,17 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
       setScore(prev => prev + 1);
       setStreak(prev => prev + 1);
       setFeedback('correct');
+
+      const funnyTaglines = [
+        "🧠 Brainpower Overdrive!",
+        "🎸 Unstoppable Math Rock Star!",
+        "🚀 To Infinity and Beyond!",
+        "🍌 That answer was bananas!",
+        "🍕 You earn 100 virtual pizza slices!"
+      ];
+      const randomTag = funnyTaglines[Math.floor(Math.random() * funnyTaglines.length)];
+      setActiveFeedbackTag(randomTag);
+
       if (streak + 1 >= 5) {
         confetti({
           particleCount: 30,
@@ -64,7 +76,8 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
       setFeedback(null);
       setUserInput('');
       setCurrentProblem(generateProblem(difficulty));
-    }, 400);
+      setActiveFeedbackTag(null);
+    }, 1300);
   };
 
   if (isGameOver) {
@@ -87,10 +100,10 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
             <p className="text-3xl font-bold text-brand-primary">+{xpGained}</p>
           </div>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 pt-4">
           <button 
             onClick={() => onFinish(score, totalQuestions, xpGained)}
-            className="flex-1 py-4 bg-brand-primary hover:bg-brand-primary/90 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+            className="flex-1 py-4 btn-3d-pink font-bold flex items-center justify-center gap-2"
           >
             <Home size={20} /> Dashboard
           </button>
@@ -103,7 +116,7 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
               setStreak(0);
               setCurrentProblem(generateProblem(difficulty));
             }}
-            className="flex-1 py-4 bg-white/10 hover:bg-white/20 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+            className="flex-1 py-4 btn-3d-blue font-bold flex items-center justify-center gap-2"
           >
             <RefreshCcw size={20} /> Play Again
           </button>
@@ -176,10 +189,32 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
 
       <button 
         onClick={onExit}
-        className="mx-auto block text-slate-500 hover:text-slate-300 transition-colors"
+        className="mx-auto block text-slate-500 hover:text-slate-300 transition-colors pt-2"
       >
         Quit Session
       </button>
+
+      {/* Styled Popup Random Feedback */}
+      <AnimatePresence>
+        {activeFeedbackTag && (
+          <motion.div
+            initial={{ scale: 0.3, opacity: 0, rotate: -15 }}
+            animate={{ scale: [1, 1.15, 1], opacity: 1, rotate: 0 }}
+            exit={{ scale: 0.5, opacity: 0, y: -50 }}
+            className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+          >
+            <div 
+              className="bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 border-4 border-white text-slate-900 font-extrabold px-8 py-5 rounded-3xl shadow-[0_12px_24px_rgba(0,0,0,0.6)] text-center max-w-sm mx-auto"
+              style={{ boxShadow: "0 8px 0 #993300, 0 16px 30px rgba(0,0,0,0.6)" }}
+            >
+              <div className="text-3xl mb-1">⭐ MATH BLAST ⭐</div>
+              <div className="text-xl font-black text-white drop-shadow-md">
+                {activeFeedbackTag}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

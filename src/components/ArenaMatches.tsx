@@ -42,6 +42,7 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
   const [userCorrectCount, setUserCorrectCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes (300 seconds)
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [activeFeedbackTag, setActiveFeedbackTag] = useState<string | null>(null);
   const [streakAwarded, setStreakAwarded] = useState(false);
   const [onlineUsersCount, setOnlineUsersCount] = useState(0);
   const [isCanceled, setIsCanceled] = useState(false);
@@ -308,6 +309,17 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
       nextCorrectCount += 1;
       setUserCorrectCount(nextCorrectCount);
       setFeedback('correct');
+
+      const funnyTaglines = [
+        "🧠 Brainpower Overdrive!",
+        "🎸 Unstoppable Math Rock Star!",
+        "🚀 To Infinity and Beyond!",
+        "🍌 That answer was bananas!",
+        "🍕 You earn 100 virtual pizza slices!"
+      ];
+      const randomTag = funnyTaglines[Math.floor(Math.random() * funnyTaglines.length)];
+      setActiveFeedbackTag(randomTag);
+
       if (soundEffectsEnabled) {
         // play small notification
       }
@@ -339,12 +351,13 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
     setTimeout(() => {
       setFeedback(null);
       setUserInput('');
+      setActiveFeedbackTag(null);
       if (finished) {
         // We finished! Lock UI, wait for the other player
       } else {
         setQuestionIndex(nextIndex);
       }
-    }, 450);
+    }, 1300);
   };
 
   // Determine game results
@@ -812,13 +825,13 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
             <div className="flex gap-4 max-w-xs mx-auto">
               <button
                 onClick={handleStartMatchmaking}
-                className="flex-1 py-3.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-black text-xs tracking-wider uppercase rounded-xl cursor-pointer"
+                className="flex-1 py-3.5 btn-3d-pink text-white font-black text-xs tracking-wider uppercase rounded-xl cursor-pointer"
               >
                 Challenge Again
               </button>
               <button
                 onClick={onExit}
-                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs uppercase rounded-xl cursor-pointer"
+                className="flex-1 py-3.5 btn-3d-blue text-white font-bold text-xs uppercase rounded-xl cursor-pointer"
               >
                 Return Home
               </button>
@@ -826,6 +839,28 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
           </motion.div>
         )}
 
+      </AnimatePresence>
+
+      {/* Styled Popup Random Feedback Overlay */}
+      <AnimatePresence>
+        {activeFeedbackTag && (
+          <motion.div
+            initial={{ scale: 0.3, opacity: 0, rotate: -15 }}
+            animate={{ scale: [1, 1.15, 1], opacity: 1, rotate: 0 }}
+            exit={{ scale: 0.5, opacity: 0, y: -50 }}
+            className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+          >
+            <div 
+              className="bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 border-4 border-white text-slate-900 font-extrabold px-8 py-5 rounded-3xl shadow-[0_12px_24px_rgba(0,0,0,0.6)] text-center max-w-sm mx-auto"
+              style={{ boxShadow: "0 8px 0 #993300, 0 16px 30px rgba(0,0,0,0.6)" }}
+            >
+              <div className="text-3xl mb-1">⭐ MATH BLAST ⭐</div>
+              <div className="text-xl font-black text-white drop-shadow-md">
+                {activeFeedbackTag}
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

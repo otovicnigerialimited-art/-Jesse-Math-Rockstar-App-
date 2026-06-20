@@ -146,18 +146,18 @@ export default function HomeLanding({ username, stats, onNavigateToTab, onNaviga
             Challenge global duelists in real-time online battles, earn math tokens, master multi-grade math lessons, and climb the scoreboard! No third-party sign-ins, pure educational power.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center gap-5 pt-4">
             <button
               onClick={() => onNavigateToTab('quiz')}
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-2xl font-black text-sm tracking-wider uppercase transition-all hover:scale-105 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-violet-600/30"
+              className="w-full sm:w-auto px-10 py-5 btn-3d-pink text-white rounded-2xl font-black text-base tracking-wider uppercase flex items-center justify-center gap-2 hover:scale-105 transition-transform"
             >
-              Enter Play Arena <ArrowRight size={16} />
+              Enter Play Arena <ArrowRight size={18} />
             </button>
             <button
               onClick={() => onNavigateToTab('rules')}
-              className="w-full sm:w-auto px-8 py-4 bg-slate-900 border border-white/5 hover:bg-slate-800 text-white rounded-2xl font-black text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-10 py-5 btn-3d-blue text-white rounded-2xl font-black text-base tracking-wide uppercase flex items-center justify-center gap-2 hover:scale-105 transition-transform"
             >
-              <HelpCircle size={15} /> How to Play & Rules
+              <HelpCircle size={17} /> How to Play & Rules
             </button>
           </div>
         </div>

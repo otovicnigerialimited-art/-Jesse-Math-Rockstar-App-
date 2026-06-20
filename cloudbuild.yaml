@@ -1,0 +1,52 @@
+steps:
+  # Step 1: Build the container image using the custom multi-stage Dockerfile
+  - name: 'gcr.io/cloud-builder/docker'
+    id: 'Build Container'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/jesse-rock-math:$COMMIT_SHA', '.']
+
+  # Step 2: Push the built container image to the Google Container Registry
+  - name: 'gcr.io/cloud-builder/docker'
+    id: 'Push Image'
+    args: ['push', 'gcr.io/$PROJECT_ID/jesse-rock-math:$COMMIT_SHA']
+
+  # Step 3: Deploy the container image to Google Cloud Run
+  # Setting --allow-unauthenticated to make the applet publicly reachable
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy to Cloud Run'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'jesse-rock-math'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/jesse-rock-math:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west2' # Europe (London) as default or fallback
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+  # Step 4: Programmatically force IAM policy binding for "allUsers"
+  # This grants the "Cloud Run Invoker" role to everyone so no 403 Forbidden errors are thrown
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Apply Public Access'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'services'
+      - 'add-iam-policy-binding'
+      - 'jesse-rock-math'
+      - '--region'
+      - 'europe-west2'
+      - '--member'
+      - 'allUsers'
+      - '--role'
+      - 'roles/run.invoker'
+      - '--platform'
+      - 'managed'
+
+images:
+  - 'gcr.io/$PROJECT_ID/jesse-rock-math:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

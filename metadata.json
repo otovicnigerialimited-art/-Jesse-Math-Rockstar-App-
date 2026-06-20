@@ -1,0 +1,6 @@
+{
+  "name": "Jesse Rock Math",
+  "description": "A gamified math learning platform with interactive quizzes, a learning hub, and progress tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

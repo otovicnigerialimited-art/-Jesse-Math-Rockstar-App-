@@ -27,6 +27,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
   const [avatarIcon, setAvatarIcon] = useState('🎸');
   const [guestbookLogs, setGuestbookLogs] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [role, setRole] = useState<'kid' | 'adult'>('kid');
 
   // Load Developer guestbook comments from Firestore
   useEffect(() => {
@@ -46,8 +47,8 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
       console.warn("Guestbook loading fallback/offline:", err);
       // Fallback comments if Offline or Permission denied before rules update
       setGuestbookLogs([
-        { id: 'fb1', username: 'Alex Multiplier', text: 'Jesse, this application is elite! The play battles are so slick.', avatar: '🎯', timestamp: Date.now() - 3600000 },
-        { id: 'fb2', username: 'TableTitan', text: 'I love how times table accuracy increases XP. Thank you Jesse Otobo!', avatar: '⚡', timestamp: Date.now() - 7200000 }
+        { id: 'fb1', username: 'Alex Multiplier', text: 'Jesse, this application is elite! The play battles are so slick.', avatar: '🎯', role: 'kid', timestamp: Date.now() - 3600000 },
+        { id: 'fb2', username: 'TableTitan', text: 'I love how times table accuracy increases XP. Thank you Jesse Otobo!', avatar: '⚡', role: 'adult', timestamp: Date.now() - 7200000 }
       ]);
     });
 
@@ -65,6 +66,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
         username: currentUser.username || "Local Guest Genius",
         text: commentText.trim(),
         avatar: avatarIcon,
+        role: role,
         timestamp: Date.now()
       });
       setCommentText('');
@@ -277,6 +279,37 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
               ))}
             </div>
 
+            {/* Role Selector */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                Are you a:
+              </span>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setRole('kid')}
+                  className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    role === 'kid'
+                      ? 'bg-[#00d2ff]/10 border-[#00d2ff] text-[#00d2ff] shadow-sm shadow-[#00d2ff]/20 scale-[1.02]'
+                      : 'bg-slate-950 border-white/5 text-slate-400 hover:text-slate-350'
+                  }`}
+                >
+                  <span>🎮 Kid Scholar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('adult')}
+                  className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    role === 'adult'
+                      ? 'bg-[#ff0055]/10 border-[#ff0055] text-[#ff0055] shadow-sm shadow-[#ff0055]/20 scale-[1.02]'
+                      : 'bg-slate-950 border-white/5 text-slate-400 hover:text-slate-355'
+                  }`}
+                >
+                  <span>🍎 Parent or Teacher</span>
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-1">
               <textarea
                 value={commentText}
@@ -295,7 +328,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
             <button
               type="submit"
               disabled={isSubmitting || !commentText.trim()}
-              className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 btn-3d-pink text-white text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Send size={12} /> Post Word of Encouragement
             </button>
@@ -311,9 +344,21 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
                 <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-lg shrink-0">
                   {log.avatar || '⚡'}
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between gap-2.5">
-                    <span className="text-xs font-black text-slate-200">{log.username}</span>
+                <div className="space-y-1 w-full">
+                  <div className="flex items-center justify-between gap-2.5 flex-wrap">
+                    <span className="text-xs font-black text-slate-200 flex items-center gap-1.5 flex-wrap">
+                      <span>{log.username}</span>
+                      {log.role === 'kid' && (
+                        <span className="px-1.5 py-0.5 bg-[#00d2ff] text-slate-950 text-[8px] font-black rounded-md tracking-wider inline-flex items-center gap-0.5 shadow-sm">
+                          🎮 KID
+                        </span>
+                      )}
+                      {log.role === 'adult' && (
+                        <span className="px-1.5 py-0.5 bg-[#ff0055] text-white text-[8px] font-black rounded-md tracking-wider inline-flex items-center gap-0.5 shadow-sm">
+                          🍎 ADULT
+                        </span>
+                      )}
+                    </span>
                     <span className="text-[9px] text-slate-550 font-mono">
                       {new Date(log.timestamp).toLocaleDateString()}
                     </span>

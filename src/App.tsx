@@ -185,6 +185,11 @@ export default function App() {
 
   const handleSignOut = async () => {
     localStorage.removeItem('jesse_rock_my_username');
+    localStorage.removeItem('jesse_rock_device_id');
+    const freshDeviceId = 'user_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+    localStorage.setItem('jesse_rock_device_id', freshDeviceId);
+    setUserDeviceId(freshDeviceId);
+    
     setAuthState({
       isAuthenticated: false,
       isChecking: false,

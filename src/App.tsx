@@ -117,7 +117,8 @@ export default function App() {
           streak: profile.streak || 0,
           bestStreak: Math.max(profile.bestStreak || 0, profile.streak || 0),
           history: profile.history || [],
-          unlockedBadges: profile.badges || ["Genius Debut"]
+          unlockedBadges: profile.badges || ["Genius Debut"],
+          weeklyProgress: profile.weeklyProgress || undefined
         });
       } else {
         // Save dynamically on Firestore if missing
@@ -269,12 +270,15 @@ export default function App() {
     if (userDeviceId) {
       try {
         await setDoc(doc(db, "users", userDeviceId), {
-          totalSolved: (updatedStats?.totalSolved || stats.totalSolved) + total,
-          correctAnswers: (updatedStats?.correctAnswers || stats.correctAnswers) + score,
-          xp: updatedStats?.xp || (stats.xp + xpGained),
-          streak: updatedStats?.streak || (score > 0 ? stats.streak + 1 : 0),
+          totalSolved: updatedStats?.totalSolved ?? (stats.totalSolved + total),
+          correctAnswers: updatedStats?.correctAnswers ?? (stats.correctAnswers + score),
+          xp: updatedStats?.xp ?? (stats.xp + xpGained),
+          level: updatedStats?.level ?? (Math.floor((stats.xp + xpGained) / 1000) + 1),
+          streak: updatedStats?.streak ?? (score > 0 ? stats.streak + 1 : 0),
           bestStreak: Math.max(stats.bestStreak, updatedStats?.streak || 0),
-          badges: updatedStats?.unlockedBadges || stats.unlockedBadges || []
+          badges: updatedStats?.unlockedBadges ?? (stats.unlockedBadges || []),
+          weeklyProgress: updatedStats?.weeklyProgress ?? null,
+          history: updatedStats?.history ?? (stats.history || [])
         }, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `users/${userDeviceId}`);
@@ -286,8 +290,10 @@ export default function App() {
   };
 
 
-  const handleClaimWeeklyBadge = () => {
+  const handleClaimWeeklyBadge = async () => {
     const { currentChallenge, weekKey } = getWeeklyData();
+    let updatedStats: any = null;
+
     setStats(prev => {
       const badges = prev.unlockedBadges || [];
       if (badges.includes(currentChallenge.id)) return prev;
@@ -297,7 +303,7 @@ export default function App() {
       const newXP = prev.xp + bonusXP;
       const newLevel = Math.floor(newXP / 1000) + 1;
 
-      return {
+      const next = {
         ...prev,
         xp: newXP,
         level: newLevel,
@@ -308,7 +314,26 @@ export default function App() {
           claimedWeeklyBadge: true
         }
       };
+      updatedStats = next;
+      return next;
     });
+
+    if (userDeviceId) {
+      try {
+        await setDoc(doc(db, "users", userDeviceId), {
+          xp: updatedStats?.xp ?? (stats.xp + 150),
+          level: updatedStats?.level ?? (Math.floor((stats.xp + 150) / 1000) + 1),
+          badges: updatedStats?.unlockedBadges ?? [...(stats.unlockedBadges || []), currentChallenge.id],
+          weeklyProgress: updatedStats?.weeklyProgress ?? {
+            ...(stats.weeklyProgress || { weekKey, solvedThisWeek: 0, xpThisWeek: 0 }),
+            weekKey,
+            claimedWeeklyBadge: true
+          }
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `users/${userDeviceId}`);
+      }
+    }
   };
 
   if (authState.isChecking) {

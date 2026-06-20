@@ -42,6 +42,18 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy');
 
+  // Custom configurations (TTRS sound, avatars & speed)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [configSettings, setConfigSettings] = useState(() => {
+    const saved = localStorage.getItem('math_rockstar_config');
+    return saved ? JSON.parse(saved) : {
+      soundEffects: true,
+      rockMusic: true,
+      selectedAvatar: '🎸 Math Rockstar',
+      customSpeed: 'easy' as Difficulty
+    };
+  });
+
   // Interactive Authentication State
   const [authState, setAuthState] = useState<{
     isAuthenticated: boolean;
@@ -253,14 +265,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex bg-slate-950 text-slate-50 font-sans selection:bg-brand-primary selection:text-white">
-      {/* Mobile Nav Toggle */}
-      <button 
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 right-4 z-50 p-3 glass rounded-xl"
-      >
-        {isSidebarOpen ? <X /> : <Menu />}
-      </button>
-
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-40 w-72 glass border-r-0 transition-transform lg:translate-x-0 lg:static",
@@ -268,18 +272,40 @@ export default function App() {
       )}>
         <div className="flex flex-col h-full p-6">
           <div className="flex flex-col gap-1 mb-10 px-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/30">
-                <Trophy className="text-white" size={22} />
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/30">
+                  <Trophy className="text-white" size={22} />
+                </div>
+                <h1 className="text-2xl font-display font-black tracking-tight leading-tight">
+                  JESSE ROCK<br />
+                  <span className="text-brand-primary text-xl">MATH</span>
+                </h1>
               </div>
-              <h1 className="text-2xl font-display font-black tracking-tight leading-tight">
-                JESSE ROCK<br />
-                <span className="text-brand-primary text-xl">MATH</span>
-              </h1>
+
+              {/* Mobile Close Button */}
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="lg:hidden p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer"
+                title="Close Menu"
+              >
+                <X size={18} />
+              </button>
             </div>
             <p className="text-[11px] text-brand-accent font-medium tracking-wide italic mt-3 bg-white/5 py-1 px-2.5 rounded-lg border-l-2 border-brand-accent">
               ★ "We are young genius"
             </p>
+            <div className="mt-3 flex items-center gap-2.5 p-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/15 rounded-xl text-left">
+              <div className="text-xl">🎸</div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-black text-slate-200 truncate">
+                  {authState.isAuthenticated ? (authState.username || "Young Genius Scholar") : "Local Guest Player"}
+                </p>
+                <p className="text-[9px] text-brand-accent/90 font-extrabold uppercase tracking-wide truncate">
+                  Star: {configSettings.selectedAvatar}
+                </p>
+              </div>
+            </div>
           </div>
 
           <nav className="flex-1 space-y-2">
@@ -353,13 +379,28 @@ export default function App() {
             </div>
           </div>
 
-          <div className="mt-auto pt-6 border-t border-white/10 space-y-2">
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:bg-white/5 font-bold transition-all">
-              <Settings size={20} /> Settings
+          <div className="mt-auto pt-4 border-t border-white/10 space-y-2">
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white font-bold transition-all cursor-pointer"
+            >
+              <Settings size={20} /> Settings Configs
             </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 font-bold transition-all">
-              <LogOut size={20} /> Sign Out
-            </button>
+            {authState.isAuthenticated ? (
+              <button 
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 font-bold transition-all cursor-pointer"
+              >
+                <LogOut size={20} /> Sign Out
+              </button>
+            ) : (
+              <button 
+                onClick={handleStandardLogin}
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-brand-primary hover:bg-brand-primary/10 font-bold transition-all cursor-pointer animate-pulse"
+              >
+                <Lock size={20} /> Sign In
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -367,6 +408,61 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
+          {/* Mobile Header / Toggle Bar */}
+          <div className="lg:hidden flex items-center justify-between p-4 bg-slate-900/90 border border-white/10 rounded-2xl mb-6 backdrop-blur-md sticky top-0 z-30 shadow-lg shadow-black/40">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-md shadow-brand-primary/20 shrink-0">
+                <Trophy className="text-white" size={16} />
+              </div>
+              <span className="text-xs font-display font-black tracking-tight leading-none text-white">
+                JESSE ROCK<br />
+                <span className="text-brand-primary text-xs">MATH 👑</span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Settings Action on Mobile Toggle Bar */}
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                title="Settings Configs"
+              >
+                <Settings size={16} />
+                <span className="text-[10px] font-bold hidden sm:inline">Settings</span>
+              </button>
+
+              {/* Sign In / Out action on Mobile Toggle Bar */}
+              {authState.isAuthenticated ? (
+                <button 
+                  onClick={handleSignOut}
+                  className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Sign Out"
+                >
+                  <LogOut size={16} />
+                  <span className="text-[10px] font-bold hidden sm:inline">Sign Out</span>
+                </button>
+              ) : (
+                <button 
+                  onClick={handleStandardLogin}
+                  className="p-2 bg-brand-primary/20 hover:bg-brand-primary/30 text-brand-primary rounded-xl transition-all cursor-pointer flex items-center gap-1.5 animate-pulse"
+                  title="Sign In"
+                >
+                  <Lock size={16} />
+                  <span className="text-[10px] font-black hidden sm:inline">Sign In</span>
+                </button>
+              )}
+
+              {/* Sidebar Menu Toggle */}
+              <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="p-2 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl shadow-md cursor-pointer flex items-center justify-center transition-all"
+                title="Toggle Menu"
+              >
+                {isSidebarOpen ? <X size={16} /> : <Menu size={16} />}
+              </button>
+            </div>
+          </div>
+
           {/* Active Iframe / Cookie Blocking Warning Banner */}
           {authState.isCookieBlocked && (
             <motion.div
@@ -471,6 +567,169 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Settings Modal (TTRS Style) */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSettingsOpen(false)}
+              className="absolute inset-0 bg-slate-950/85 backdrop-blur-md"
+            />
+            
+            {/* Modal Box */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg overflow-hidden rounded-[2.5rem] bg-slate-900 border border-white/10 p-6 md:p-8 shadow-2xl z-10"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-brand-primary/20 text-brand-primary rounded-xl">
+                    <Settings size={22} className="animate-spin-slow text-brand-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-display font-black tracking-tight text-white leading-none">ROCK CONFIGS</h3>
+                    <p className="text-[10px] text-brand-accent tracking-wider font-extrabold uppercase bg-white/5 px-2 py-0.5 rounded mt-1.5 inline-block">TT Rockstars Tweak Config</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="space-y-6">
+                {/* Sounds Section */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Music size={14} className="text-violet-400" /> Sound & Music Toggles
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => setConfigSettings(prev => {
+                        const next = { ...prev, soundEffects: !prev.soundEffects };
+                        localStorage.setItem('math_rockstar_config', JSON.stringify(next));
+                        return next;
+                      })}
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all text-left flex flex-col justify-between cursor-pointer",
+                        configSettings.soundEffects 
+                          ? "bg-brand-primary/15 border-brand-primary/40 text-white" 
+                          : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10"
+                      )}
+                    >
+                      <span className="text-[11px] font-bold text-slate-400">Game SFX Sounds</span>
+                      <span className="text-sm font-black mt-2">{configSettings.soundEffects ? "🔊 Beeps: ON" : "🔇 Beeps: OFF"}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setConfigSettings(prev => {
+                        const next = { ...prev, rockMusic: !prev.rockMusic };
+                        localStorage.setItem('math_rockstar_config', JSON.stringify(next));
+                        return next;
+                      })}
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all text-left flex flex-col justify-between cursor-pointer",
+                        configSettings.rockMusic 
+                          ? "bg-violet-600/15 border-violet-500/40 text-white" 
+                          : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10"
+                      )}
+                    >
+                      <span className="text-[11px] font-bold text-slate-400">Rock Beats Music</span>
+                      <span className="text-sm font-black mt-2">{configSettings.rockMusic ? "🎸 Beats: ON" : "🔇 Beats: OFF"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Avatar Section */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Trophy size={14} className="text-amber-400" /> Choose Rock Star Avatar
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { name: '🎸 Math Rockstar', emoji: '🎸' },
+                      { name: '👑 Young Genius', emoji: '👑' },
+                      { name: '⚡ Scratch Ninja', emoji: '⚡' },
+                      { name: '🔥 Table Titan', emoji: '🔥' },
+                      { name: '🔮 Science Wiz', emoji: '🔮' },
+                      { name: '🚀 Orbit Cadet', emoji: '🚀' }
+                    ].map((av) => (
+                      <button
+                        key={av.name}
+                        onClick={() => setConfigSettings(prev => {
+                          const next = { ...prev, selectedAvatar: av.name };
+                          localStorage.setItem('math_rockstar_config', JSON.stringify(next));
+                          return next;
+                        })}
+                        className={cn(
+                          "p-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer",
+                          configSettings.selectedAvatar === av.name
+                            ? "bg-gradient-to-br from-violet-600 to-indigo-600 border-violet-500/40 scale-105 shadow-lg shadow-violet-600/20 text-white font-black"
+                            : "bg-white/5 border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                        )}
+                      >
+                        <span className="text-2xl">{av.emoji}</span>
+                        <span className="text-[10px] font-bold tracking-tight leading-tight">{av.name.replace(/^[^\s]+\s/, '')}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Speed Tweak Section (Difficulty) */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Award size={14} className="text-cyan-400" /> TTRS Speed / Difficulty
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(['easy', 'medium', 'hard', 'extreme'] as Difficulty[]).map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => {
+                          setSelectedDifficulty(d);
+                          setConfigSettings(prev => {
+                            const next = { ...prev, customSpeed: d };
+                            localStorage.setItem('math_rockstar_config', JSON.stringify(next));
+                            return next;
+                          });
+                        }}
+                        className={cn(
+                          "py-2 px-1 rounded-xl border text-center font-black text-[10px] capitalize transition-all cursor-pointer",
+                          selectedDifficulty === d
+                            ? "bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20"
+                            : "bg-white/5 border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                        )}
+                      >
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-8 pt-4 border-t border-white/5 flex justify-end">
+                <button
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="px-6 py-2.5 bg-gradient-to-r from-brand-primary to-brand-secondary hover:from-brand-primary/90 hover:to-brand-secondary/90 text-white font-black text-xs rounded-xl tracking-wider transition-all cursor-pointer shadow-md shadow-brand-primary/20"
+                >
+                  ✓ SAVE CONFIGS
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

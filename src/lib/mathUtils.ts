@@ -110,3 +110,41 @@ export function calculateXP(correct: boolean, difficulty: Difficulty): number {
   const multipliers = { easy: 1, medium: 2, hard: 4, extreme: 8 };
   return base * multipliers[difficulty];
 }
+
+export function generateArenaQuestions(): { question: string, answer: string, id: string }[] {
+  const list = [];
+  // multiplication, addition and subtraction as requested
+  const ops = ['+', '-', '×'];
+  for (let i = 0; i < 20; i++) {
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let num1 = 0, num2 = 0;
+    
+    // Questions should be hard (e.g. larger multiplication bounds, double-to-triple digit sums)
+    if (op === '×') {
+      num1 = Math.floor(Math.random() * 15) + 7; // 7 to 21
+      num2 = Math.floor(Math.random() * 13) + 6; // 6 to 18
+    } else if (op === '+') {
+      num1 = Math.floor(Math.random() * 380) + 60; // 60 to 440
+      num2 = Math.floor(Math.random() * 380) + 60;
+    } else {
+      num1 = Math.floor(Math.random() * 450) + 100; // 100 to 550
+      num2 = Math.floor(Math.random() * 380) + 40;
+      if (num1 < num2) {
+        [num1, num2] = [num2, num1];
+      }
+    }
+
+    let answer = '';
+    if (op === '+') answer = String(num1 + num2);
+    else if (op === '-') answer = String(num1 - num2);
+    else if (op === '×') answer = String(num1 * num2);
+
+    list.push({
+      id: `arena-q-${i}-${Math.random().toString(36).substring(2, 6)}`,
+      question: `${num1} ${op} ${num2}`,
+      answer
+    });
+  }
+  return list;
+}
+

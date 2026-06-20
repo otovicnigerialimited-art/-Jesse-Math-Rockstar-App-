@@ -14,7 +14,14 @@ import {
   ShieldAlert,
   ShieldCheck,
   ExternalLink,
-  Lock
+  Lock,
+  Loader2,
+  Home,
+  FileText,
+  HelpCircle,
+  Star,
+  Globe,
+  User
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Quiz from './components/Quiz';
@@ -22,6 +29,16 @@ import LearningHub from './components/LearningHub';
 import BadgesSection, { getWeeklyData } from './components/BadgesSection';
 import { UserStats, Difficulty, Lesson } from './types';
 import { cn } from './lib/utils';
+import { db } from './lib/firebase';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from './lib/firestoreUtils';
+import AuthGate from './components/AuthGate';
+import ArenaMatches from './components/ArenaMatches';
+import HomeLanding from './components/HomeLanding';
+import RulesPage from './components/RulesPage';
+import TermsPage from './components/TermsPage';
+import DeveloperPage from './components/DeveloperPage';
+
 
 const INITIAL_STATS: UserStats = {
   totalSolved: 0,
@@ -34,7 +51,7 @@ const INITIAL_STATS: UserStats = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'hub' | 'quiz' | 'badges'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer'>('home');
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem('math_rockstar_stats');
     return saved ? JSON.parse(saved) : INITIAL_STATS;
@@ -69,122 +86,110 @@ export default function App() {
     username: null
   });
 
-  // Verify auth session cookies with the server
-  const verifyAuthSession = async () => {
+  const [userDeviceId, setUserDeviceId] = useState<string | null>(null);
+  const [practiceLesson, setPracticeLesson] = useState<Lesson | null>(null);
+
+  const fetchAndSyncProfile = async (uname: string, deviceId: string) => {
+    const userDocRef = doc(db, "users", deviceId);
+    let userDoc;
     try {
-      const res = await fetch('/api/auth-status');
-      if (res.ok) {
-        const data = await res.json();
-        setAuthState(prev => ({
-          ...prev,
-          isAuthenticated: data.authenticated,
-          isChecking: false,
-          isCookieBlocked: window.self !== window.top && !document.cookie.includes('session_token='),
-          message: data.message
-        }));
-      } else {
-        setAuthState(prev => ({ ...prev, isChecking: false }));
-      }
-    } catch (err) {
-      console.warn("Could not reach backend API server. Operating in offline/client mode.", err);
-      setAuthState(prev => ({ ...prev, isChecking: false }));
+      userDoc = await getDoc(userDocRef);
+    } catch (e) {
+      console.warn("Failed to fetch user document from Firestore, falling back:", e);
     }
-  };
 
-  useEffect(() => {
-    // 1. Check initial status
-    verifyAuthSession();
-
-    // 2. Set up cross-origin secure message listener for the popup fallback
-    const handlePopupMessage = (event: MessageEvent) => {
-      // Validate that message is indeed our AUTH_SUCCESS
-      if (event.data && event.data.type === 'AUTH_SUCCESS') {
-        console.log("🔒 Secure auth cookie synced successfully from top-level popup!");
+    try {
+      if (userDoc && userDoc.exists()) {
+        const profile = userDoc.data();
         setAuthState({
           isAuthenticated: true,
           isChecking: false,
           isCookieBlocked: false,
-          message: "Secure cross-site session synced!",
-          username: "Young Genius Scholar"
+          message: `Logged in as ${profile.username}!`,
+          username: profile.username
+        });
+        // Map stats from Database
+        setStats({
+          totalSolved: profile.totalSolved || 0,
+          correctAnswers: profile.correctAnswers || 0,
+          level: Math.floor((profile.xp || 100) / 1000) + 1,
+          xp: profile.xp || 100,
+          streak: profile.streak || 0,
+          bestStreak: Math.max(profile.bestStreak || 0, profile.streak || 0),
+          history: profile.history || [],
+          unlockedBadges: profile.badges || ["Genius Debut"]
+        });
+      } else {
+        // Save dynamically on Firestore if missing
+        try {
+          await setDoc(userDocRef, {
+            uid: deviceId,
+            username: uname,
+            xp: 100,
+            streak: 1,
+            coins: 100,
+            badges: ["Genius Debut"],
+            createdAt: Date.now()
+          });
+        } catch (srvErr) {
+          console.warn("Could not save profile record to database:", srvErr);
+        }
+
+        setAuthState({
+          isAuthenticated: true,
+          isChecking: false,
+          isCookieBlocked: false,
+          message: `Welcome to Jesse Rock, ${uname}!`,
+          username: uname
         });
       }
-    };
+    } catch (e) {
+      console.error("Error loading user profile:", e);
+      setAuthState({
+        isAuthenticated: true,
+        isChecking: false,
+        isCookieBlocked: false,
+        message: "Logged in",
+        username: uname
+      });
+    }
+  };
 
-    window.addEventListener('message', handlePopupMessage);
-    return () => window.removeEventListener('message', handlePopupMessage);
+  useEffect(() => {
+    // Check if there is an active logged-in math rockstar on this device
+    const storedUsername = localStorage.getItem('jesse_rock_my_username');
+    let storedDeviceId = localStorage.getItem('jesse_rock_device_id');
+    
+    if (!storedDeviceId) {
+      storedDeviceId = 'user_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+      localStorage.setItem('jesse_rock_device_id', storedDeviceId);
+    }
+    
+    setUserDeviceId(storedDeviceId);
+
+    if (storedUsername) {
+      fetchAndSyncProfile(storedUsername, storedDeviceId);
+    } else {
+      setAuthState({
+        isAuthenticated: false,
+        isChecking: false,
+        isCookieBlocked: false,
+        message: "Please register to begin.",
+        username: null
+      });
+    }
   }, []);
 
-  // Standard login trigger: attempts to login inside the iframe
-  const handleStandardLogin = async () => {
-    try {
-      setAuthState(prev => ({ ...prev, isChecking: true }));
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: "Young Genius Scholar" })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        // Immediately double check if cookies actually set/passed correctly (detecting silent iframe cookie blocks)
-        const checkRes = await fetch('/api/auth-status');
-        const checkData = await checkRes.json();
-        
-        const testCookieSet = document.cookie.includes('session_token=');
-        
-        // If server says unauthorized but backend response said success, modern browser has blocked it silently inside the iframe
-        const blocked = !checkData.authenticated && !testCookieSet;
-        
-        setAuthState({
-          isAuthenticated: checkData.authenticated,
-          isChecking: false,
-          isCookieBlocked: blocked,
-          message: blocked 
-            ? "🔒 Iframe cookie block detected! Standard cookies are disabled in cross-origin iFrames. Use the Popup Fallback strategy to bypass."
-            : "Successfully authenticated with SameSite=None secure cookies!",
-          username: checkData.authenticated ? "Young Genius" : null
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      setAuthState(prev => ({ 
-        ...prev, 
-        isChecking: false, 
-        message: "Offline demo session active." 
-      }));
-    }
-  };
-
-  // Secure top-level popup window strategy fallback (circumvents third-party cookie blocking)
-  const handlePopupLoginFallback = () => {
-    // Open the auth popup on the exact target origin of the app
-    const width = 520;
-    const height = 550;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    const popup = window.open(
-      '/api/auth-popup',
-      'JesseRockMathAuthSync',
-      `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
-    );
-
-    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-      alert("⚠️ Pop-up window was blocked by your browser! Please allow popups for this site to sync security cookies.");
-    }
-  };
+  const handleStandardLogin = () => {};
+  const handlePopupLoginFallback = () => {};
 
   const handleSignOut = async () => {
-    try {
-      await fetch('/api/logout', { method: 'POST' });
-    } catch (e) {}
-    document.cookie = "session_token=; path=/; max-age=0";
+    localStorage.removeItem('jesse_rock_my_username');
     setAuthState({
       isAuthenticated: false,
       isChecking: false,
       isCookieBlocked: false,
-      message: "Successfully signed out. Cookies cleared.",
+      message: "Please enter your name to begin.",
       username: null
     });
   };
@@ -193,43 +198,88 @@ export default function App() {
     localStorage.setItem('math_rockstar_stats', JSON.stringify(stats));
   }, [stats]);
 
-  const handleQuizFinish = (score: number, total: number, xpGained: number) => {
+  // Real-time online heartbeat hook for live player scanning
+  useEffect(() => {
+    if (!authState.isAuthenticated || !userDeviceId) return;
+
+    const updateActivity = async () => {
+      try {
+        await updateDoc(doc(db, "users", userDeviceId), {
+          lastActiveAt: Date.now(),
+          username: authState.username || "Anonymous Hero"
+        });
+      } catch (err) {
+        try {
+          await setDoc(doc(db, "users", userDeviceId), {
+            lastActiveAt: Date.now(),
+            username: authState.username || "Anonymous Hero"
+          }, { merge: true });
+        } catch (subErr) {
+          console.warn("Heartbeat update failed:", subErr);
+        }
+      }
+    };
+
+    updateActivity();
+
+    // Check-in every 30 seconds
+    const interval = setInterval(updateActivity, 30000);
+    return () => clearInterval(interval);
+  }, [authState.isAuthenticated, userDeviceId, authState.username]);
+
+  const handleQuizFinish = async (score: number, total: number, xpGained: number) => {
     const { weekKey } = getWeeklyData();
+    let updatedStats: any = null;
+
     setStats(prev => {
       const newXP = prev.xp + xpGained;
       const newLevel = Math.floor(newXP / 1000) + 1;
       const currentStreak = score > 0 ? prev.streak + 1 : 0;
+      const best = Math.max(prev.bestStreak, currentStreak);
       
-      // Update weekly progress tracking
       const prevWeekly = prev.weeklyProgress?.weekKey === weekKey 
         ? prev.weeklyProgress 
         : { weekKey, solvedThisWeek: 0, xpThisWeek: 0, claimedWeeklyBadge: false };
       
       const newWeekly = {
         ...prevWeekly,
-        solvedThisWeek: prevWeekly.solvedThisWeek + score, // only correct solves count
-        xpThisWeek: prevWeekly.xpThisWeek + xpGained
+        solvedThisWeek: (prevWeekly?.solvedThisWeek || 0) + score,
+        xpThisWeek: (prevWeekly?.xpThisWeek || 0) + xpGained
       };
       
-      return {
+      const next = {
         ...prev,
         totalSolved: prev.totalSolved + total,
         correctAnswers: prev.correctAnswers + score,
         xp: newXP,
         level: newLevel,
         streak: currentStreak,
-        bestStreak: Math.max(prev.bestStreak, currentStreak),
-        history: [...prev.history, {
-          date: new Date().toLocaleDateString(),
-          score,
-          total,
-          difficulty: selectedDifficulty
-        }],
+        bestStreak: best,
         weeklyProgress: newWeekly
       };
+      updatedStats = next;
+      return next;
     });
+
+    if (userDeviceId) {
+      try {
+        await setDoc(doc(db, "users", userDeviceId), {
+          totalSolved: (updatedStats?.totalSolved || stats.totalSolved) + total,
+          correctAnswers: (updatedStats?.correctAnswers || stats.correctAnswers) + score,
+          xp: updatedStats?.xp || (stats.xp + xpGained),
+          streak: updatedStats?.streak || (score > 0 ? stats.streak + 1 : 0),
+          bestStreak: Math.max(stats.bestStreak, updatedStats?.streak || 0),
+          badges: updatedStats?.unlockedBadges || stats.unlockedBadges || []
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `users/${userDeviceId}`);
+      }
+    }
+    
+    setPracticeLesson(null);
     setActiveTab('dashboard');
   };
+
 
   const handleClaimWeeklyBadge = () => {
     const { currentChallenge, weekKey } = getWeeklyData();
@@ -256,18 +306,44 @@ export default function App() {
     });
   };
 
+  if (authState.isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+        <div className="text-center space-y-4">
+          <Loader2 className="animate-spin text-brand-primary w-12 h-12 mx-auto" strokeWidth={3} />
+          <p className="text-sm font-black tracking-wider text-slate-400">CONNECTING TO JESSE ROCK MATH ARENA...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authState.isAuthenticated) {
+    return (
+      <AuthGate 
+        onAuthSuccess={(uname, matchedUid) => {
+          setUserDeviceId(matchedUid);
+          fetchAndSyncProfile(uname, matchedUid);
+        }} 
+      />
+    );
+  }
+
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'home', label: 'Welcome Home', icon: Home },
+    { id: 'dashboard', label: 'My Progress Stats', icon: Award },
     { id: 'hub', label: 'Learning Hub', icon: BookOpen },
-    { id: 'quiz', label: 'The Arena', icon: Trophy },
-    { id: 'badges', label: 'Badges & Quests', icon: Award },
+    { id: 'quiz', label: 'Play Arena', icon: Trophy },
+    { id: 'badges', label: 'Badges & Quests', icon: Star },
+    { id: 'rules', label: 'How It Works & Rules', icon: HelpCircle },
+    { id: 'terms', label: 'Terms & Policies', icon: FileText },
+    { id: 'developer', label: 'Meet Developer', icon: User }
   ];
 
   return (
     <div className="min-h-screen flex bg-slate-950 text-slate-50 font-sans selection:bg-brand-primary selection:text-white">
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-72 glass border-r-0 transition-transform lg:translate-x-0 lg:static",
+        "fixed inset-y-0 left-0 z-40 w-72 glass border-r-0 transition-transform lg:translate-x-0 lg:static shrink-0",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full p-6">
@@ -297,7 +373,7 @@ export default function App() {
             </p>
             <div className="mt-3 flex items-center gap-2.5 p-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/15 rounded-xl text-left">
               <div className="text-xl">🎸</div>
-              <div className="min-w-0">
+              <div className="min-w-0 font-sans">
                 <p className="text-[11px] font-black text-slate-200 truncate">
                   {authState.isAuthenticated ? (authState.username || "Young Genius Scholar") : "Local Guest Player"}
                 </p>
@@ -308,7 +384,7 @@ export default function App() {
             </div>
           </div>
 
-          <nav className="flex-1 space-y-2">
+          <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -317,65 +393,37 @@ export default function App() {
                   setIsSidebarOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-bold transition-all",
+                  "w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-xs font-bold transition-all relative",
                   activeTab === item.id 
                     ? "bg-brand-primary text-white rock-shadow" 
                     : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                 )}
               >
-                <item.icon size={22} />
+                <item.icon size={18} />
                 {item.label}
               </button>
             ))}
           </nav>
 
-          {/* Active Auth status & Cookie check */}
-          <div className="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+          {/* Active Device sync details */}
+          <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Secure Sync</span>
-              {authState.isAuthenticated ? (
-                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-black">
-                  <ShieldCheck size={12} className="animate-pulse" /> Secure
-                </span>
-              ) : authState.isCookieBlocked ? (
-                <span className="flex items-center gap-1 text-[11px] text-amber-400 font-black">
-                  <ShieldAlert size={12} /> Blocked
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-[11px] text-slate-400 font-bold">
-                  <Shield size={12} /> Local Mode
-                </span>
-              )}
+              <span className="text-[10px] text-slate-450 font-black uppercase tracking-wider">Device Sync Status</span>
+              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-black">
+                <ShieldCheck size={11} className="animate-pulse" /> Secure
+              </span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <p className="text-[10px] text-slate-400 leading-normal font-medium">
-                {authState.message}
+                Signed in as: <strong className="text-white">{authState.username}</strong>
               </p>
-              
-              {!authState.isAuthenticated ? (
-                <div className="flex flex-col gap-1.5 pt-1">
-                  <button 
-                    onClick={handleStandardLogin}
-                    className="w-full py-2 bg-brand-primary/20 hover:bg-brand-primary/35 text-brand-primary rounded-xl text-[11px] font-black tracking-wide transition-all text-center cursor-pointer"
-                  >
-                    Standard Login
-                  </button>
-                  <button 
-                    onClick={handlePopupLoginFallback}
-                    className="w-full py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl text-[11px] font-black tracking-wide transition-all text-center flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-violet-600/10 hover:shadow-violet-600/20"
-                  >
-                    <ExternalLink size={11} /> Popup Fallback Sync
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={handleSignOut}
-                  className="w-full py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer"
-                >
-                  Clear Session
-                </button>
-              )}
+              <button 
+                onClick={handleSignOut}
+                className="w-full py-2 bg-gradient-to-r from-rose-600/20 to-red-600/20 hover:from-rose-600/30 hover:to-red-600/30 text-rose-450 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                🔑 Switch / Log In
+              </button>
             </div>
           </div>
 
@@ -386,21 +434,6 @@ export default function App() {
             >
               <Settings size={20} /> Settings Configs
             </button>
-            {authState.isAuthenticated ? (
-              <button 
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 font-bold transition-all cursor-pointer"
-              >
-                <LogOut size={20} /> Sign Out
-              </button>
-            ) : (
-              <button 
-                onClick={handleStandardLogin}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-brand-primary hover:bg-brand-primary/10 font-bold transition-all cursor-pointer animate-pulse"
-              >
-                <Lock size={20} /> Sign In
-              </button>
-            )}
           </div>
         </div>
       </aside>
@@ -420,37 +453,26 @@ export default function App() {
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* Sign Out / Log Out Button on Mobile */}
+              <button 
+                onClick={handleSignOut}
+                className="p-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 rounded-xl transition-all cursor-pointer flex items-center gap-1"
+                title="Sign Out / Switch Player Account"
+              >
+                <Lock size={14} className="shrink-0" />
+                <span className="text-[9px] font-black uppercase tracking-wider hidden xs:inline">Sign Out</span>
+              </button>
+
               {/* Settings Action on Mobile Toggle Bar */}
               <button 
                 onClick={() => setIsSettingsOpen(true)}
-                className="p-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                className="p-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-all cursor-pointer flex items-center gap-1"
                 title="Settings Configs"
               >
-                <Settings size={16} />
-                <span className="text-[10px] font-bold hidden sm:inline">Settings</span>
+                <Settings size={14} />
+                <span className="text-[9px] font-bold hidden sm:inline">Settings</span>
               </button>
-
-              {/* Sign In / Out action on Mobile Toggle Bar */}
-              {authState.isAuthenticated ? (
-                <button 
-                  onClick={handleSignOut}
-                  className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-                  title="Sign Out"
-                >
-                  <LogOut size={16} />
-                  <span className="text-[10px] font-bold hidden sm:inline">Sign Out</span>
-                </button>
-              ) : (
-                <button 
-                  onClick={handleStandardLogin}
-                  className="p-2 bg-brand-primary/20 hover:bg-brand-primary/30 text-brand-primary rounded-xl transition-all cursor-pointer flex items-center gap-1.5 animate-pulse"
-                  title="Sign In"
-                >
-                  <Lock size={16} />
-                  <span className="text-[10px] font-black hidden sm:inline">Sign In</span>
-                </button>
-              )}
 
               {/* Sidebar Menu Toggle */}
               <button 
@@ -463,7 +485,46 @@ export default function App() {
             </div>
           </div>
 
-          {/* Active Iframe / Cookie Blocking Warning Banner */}
+          {/* Top Persistent Header on Desktop & Tablet */}
+          <div className="mb-6 hidden md:flex items-center justify-between p-5 rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-violet-600/10 flex items-center justify-center text-sm border border-violet-500/10">
+                👑
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase font-black tracking-wider leading-none">Logged In Player</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-black text-white">{authState.username}</span>
+                  <span className="flex items-center gap-1 text-[8px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full font-black uppercase tracking-wide border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping animate-duration-1000" />
+                    Verified Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActiveTab('developer')}
+                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'developer' 
+                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/35 shadow-md shadow-violet-500/10' 
+                    : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-transparent'
+                }`}
+              >
+                <User size={13} /> Meet Developer
+              </button>
+
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-red-650 hover:from-rose-500 hover:to-red-650 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] cursor-pointer flex items-center gap-1.5 shadow-lg shadow-rose-600/20"
+              >
+                <Lock size={12} /> Sign Out / Switch Login
+              </button>
+            </div>
+          </div>
+
+          {/* Active Iframe / Cookie Blocking Warning Block */}
           {authState.isCookieBlocked && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -475,9 +536,9 @@ export default function App() {
                   <ShieldAlert size={22} className="animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-amber-200">Cross-Site Cookie Blocked (Iframe Mode)</h4>
+                  <h4 className="text-sm font-black text-amber-200">Cross-Site Cookie Blocked (Iframe Sandbox)</h4>
                   <p className="text-xs text-slate-400 font-medium leading-relaxed mt-0.5">
-                    Safari or Chrome is blocking third-party authentication cookies in this sandbox iframe. No worries—click Bypass & Sync to authorize.
+                    Your browser limits third-party storage access inside iframes. No worries—click Bypass & Sync to authorize.
                   </p>
                 </div>
               </div>
@@ -491,6 +552,41 @@ export default function App() {
           )}
 
           <AnimatePresence mode="wait">
+            {activeTab === 'home' && (
+              <motion.div
+                key="home"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+              >
+                <HomeLanding 
+                  username={authState.username || "Young Genius"} 
+                  stats={{
+                    level: stats.level,
+                    streak: stats.streak,
+                    correctAnswers: stats.correctAnswers,
+                    totalSolved: stats.totalSolved
+                  }}
+                  onNavigateToTab={(tab) => setActiveTab(tab)}
+                  onNavigateToLesson={(lessonId) => {
+                    const lessonsReference = [
+                      { id: '1', difficulty: 'easy', title: 'Multiplication Mastery' },
+                      { id: '2', difficulty: 'medium', title: 'Division Decoded' },
+                      { id: '4', difficulty: 'hard', title: 'Long Division Arena' },
+                      { id: '5', difficulty: 'extreme', title: 'Fraction Fusion' },
+                      { id: '3', difficulty: 'hard', title: 'Algebraic Basics' }
+                    ];
+                    const selected = lessonsReference.find(l => l.id === lessonId);
+                    if (selected) {
+                      setSelectedDifficulty(selected.difficulty as Difficulty);
+                      setPracticeLesson(selected as any);
+                      setActiveTab('quiz');
+                    }
+                  }}
+                />
+              </motion.div>
+            )}
+
             {activeTab === 'dashboard' && (
               <motion.div
                 key="dashboard"
@@ -514,6 +610,7 @@ export default function App() {
               >
                 <LearningHub onStartLesson={(lesson) => {
                   setSelectedDifficulty(lesson.difficulty);
+                  setPracticeLesson(lesson);
                   setActiveTab('quiz');
                 }} />
               </motion.div>
@@ -526,28 +623,39 @@ export default function App() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.05 }}
               >
-                <div className="mb-8 flex flex-wrap gap-4 items-center justify-between">
-                  <h2 className="text-3xl font-display font-bold">The Arena</h2>
-                  <div className="flex bg-white/5 p-1 rounded-2xl">
-                    {(['easy', 'medium', 'hard', 'extreme'] as Difficulty[]).map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setSelectedDifficulty(d)}
-                        className={cn(
-                          "px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all",
-                          selectedDifficulty === d ? "bg-brand-primary text-white" : "text-slate-400 hover:text-slate-200"
-                        )}
+                {practiceLesson ? (
+                  <div>
+                    <div className="mb-6 flex gap-3 items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-amber-500 tracking-wider">Practice mode 🎓</span>
+                        <h2 className="text-2xl font-display font-black text-white">{practiceLesson.title} Practice</h2>
+                      </div>
+                      <button 
+                        onClick={() => setPracticeLesson(null)} 
+                        className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold font-mono cursor-pointer animate-pulse"
                       >
-                        {d}
+                        ← Back to HUB
                       </button>
-                    ))}
+                    </div>
+                    <Quiz 
+                      difficulty={selectedDifficulty} 
+                      onFinish={(score, total, xpGained) => {
+                        handleQuizFinish(score, total, xpGained);
+                        setPracticeLesson(null);
+                      }}
+                      onExit={() => {
+                        setPracticeLesson(null);
+                        setActiveTab('hub');
+                      }}
+                    />
                   </div>
-                </div>
-                <Quiz 
-                  difficulty={selectedDifficulty} 
-                  onFinish={handleQuizFinish}
-                  onExit={() => setActiveTab('dashboard')}
-                />
+                ) : (
+                  <ArenaMatches 
+                    currentUser={{ uid: userDeviceId || "dev", username: authState.username || "Human Player" }}
+                    onExit={() => setActiveTab('home')}
+                    soundEffectsEnabled={configSettings.soundEffects}
+                  />
+                )}
               </motion.div>
             )}
 
@@ -562,6 +670,39 @@ export default function App() {
                   stats={stats}
                   onClaimWeeklyBadge={handleClaimWeeklyBadge}
                 />
+              </motion.div>
+            )}
+
+            {activeTab === 'rules' && (
+              <motion.div
+                key="rules"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+              >
+                <RulesPage onNavigateToTab={(tab) => setActiveTab(tab)} />
+              </motion.div>
+            )}
+
+            {activeTab === 'terms' && (
+              <motion.div
+                key="terms"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+              >
+                <TermsPage />
+              </motion.div>
+            )}
+
+            {activeTab === 'developer' && (
+              <motion.div
+                key="developer"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+              >
+                <DeveloperPage currentUser={{ uid: userDeviceId || 'guest', username: authState.username || 'Genius Scholar' }} />
               </motion.div>
             )}
           </AnimatePresence>

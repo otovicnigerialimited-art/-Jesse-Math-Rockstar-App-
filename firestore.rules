@@ -20,5 +20,25 @@ service cloud.firestore {
     match /developer_guestbook/{docId} {
       allow read, write: if true;
     }
+
+    match /schools/{docId} {
+      allow read, write: if true;
+    }
+
+    match /school_admins/{docId} {
+      allow read, write: if true;
+    }
+
+    match /teachers/{docId} {
+      allow read, write: if true;
+    }
+
+    match /students/{docId} {
+      allow read, write: if true;
+    }
+
+    match /student_activity_logs/{docId} {
+      allow read, write: if true;
+    }
   }
 }

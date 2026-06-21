@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trophy, 
@@ -17,24 +17,333 @@ import {
   Award,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  GraduationCap,
+  ArrowRightLeft,
+  MapPin,
+  PlusCircle,
+  LogIn
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { 
+  fetchAllSchools, 
+  authenticateSchoolUser, 
+  School, 
+  registerSchool, 
+  addTeacher, 
+  logStudentActivity 
+} from '../lib/schoolDb';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 
 interface AuthGateProps {
   onAuthSuccess: (username: string, uid: string) => void;
 }
 
+const API_KEY =
+  process.env.GOOGLE_MAPS_PLATFORM_KEY ||
+  (import.meta as any).env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
+  (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
+  '';
+const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
+
 export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
+  // Tabs: 'individual' for Home Login, 'school' for School Login
+  const [loginTab, setLoginTab] = useState<'individual' | 'school'>('individual');
+  // School sub-tabs: 'signin' for traditional login, 'teachersignup' for Teacher Self-registration
+  const [schoolSubTab, setSchoolSubTab] = useState<'signin' | 'teachersignup'>('signin');
+
+  // Home Login State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // School Login Form State
+  const [schoolsList, setSchoolsList] = useState<School[]>([]);
+  const [selectedSchool, setSelectedSchool] = useState('');
+  const [className, setClassName] = useState('');
+  const [schoolUsername, setSchoolUsername] = useState('');
+  const [schoolPassword, setSchoolPassword] = useState('');
+  const [showSchoolPassword, setShowSchoolPassword] = useState(false);
+
+  // Interactive Google Maps School Autocomplete State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [predictions, setPredictions] = useState<any[]>([]);
+  const [selectedSchoolObj, setSelectedSchoolObj] = useState<{ id: string, name: string, address?: string } | null>(null);
+  const [schoolLocation, setSchoolLocation] = useState<{ lat: number, lng: number } | null>(null);
+
+  // Teacher Self-registration states
+  const [teacherNameSignup, setTeacherNameSignup] = useState('');
+  const [classSignup, setClassSignup] = useState('');
+  const [teacherUsernameSignup, setTeacherUsernameSignup] = useState('');
+  const [teacherPasswordSignup, setTeacherPasswordSignup] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [showRules, setShowRules] = useState(false);
+
+  // Load registered schools database
+  useEffect(() => {
+    async function loadSchools() {
+      try {
+        const list = await fetchAllSchools();
+        setSchoolsList(list);
+        if (list.length > 0) {
+          setSelectedSchool(list[0].id);
+        }
+      } catch (err) {
+        console.warn("Failed to load schools database:", err);
+      }
+    }
+    loadSchools();
+  }, [loginTab]);
+
+  const handleSchoolSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!selectedSchool) {
+      setError("Please select your registered school!");
+      return;
+    }
+    if (!schoolUsername.trim() || !schoolPassword.trim()) {
+      setError("Please fill in both school username and secret PIN!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await authenticateSchoolUser(
+        selectedSchool,
+        className.trim(),
+        schoolUsername.trim(),
+        schoolPassword.trim()
+      );
+
+      if (!res || !res.success) {
+        setError("Verified auth lock failed! Please check credentials or Class Name PIN match.");
+        setLoading(false);
+        return;
+      }
+
+      const { role, userObj } = res;
+      const schoolObj = schoolsList.find(s => s.id === selectedSchool);
+      const schoolName = schoolObj ? schoolObj.school_name : "Your Math School";
+
+      // Store school states natively in localStorage
+      localStorage.setItem('jesse_rock_role', role);
+      localStorage.setItem('jesse_rock_school_id', selectedSchool);
+      localStorage.setItem('jesse_rock_school_name', schoolName);
+      localStorage.setItem('jesse_rock_class_name', role === 'student' ? userObj.class_name : (role === 'teacher' ? userObj.assigned_class : ''));
+      localStorage.setItem('jesse_rock_real_name', role === 'student' ? `${userObj.real_first_name} ${userObj.real_last_name}` : (role === 'teacher' ? userObj.teacher_name : 'Admin User'));
+      localStorage.setItem('jesse_rock_user_id', userObj.id);
+      localStorage.setItem('jesse_rock_my_username', userObj.username);
+      localStorage.setItem('jesse_rock_device_id', userObj.id);
+
+      // Log successful student login action
+      if (role === 'student' && userObj) {
+        try {
+          await logStudentActivity(
+            userObj.id,
+            `${userObj.real_first_name} ${userObj.real_last_name}`,
+            selectedSchool,
+            userObj.class_name,
+            'login',
+            `Authenticated successfully and logged into classroom!`
+          );
+        } catch (logErr) {
+          console.warn("Telemetry log for login bypassed:", logErr);
+        }
+      }
+
+      setSuccess(`Awesome! Verifying credentials... Logged in as ${role.toUpperCase()}: ${userObj.username}`);
+      
+      setTimeout(() => {
+        onAuthSuccess(userObj.username, userObj.id);
+      }, 1200);
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to contact database school gate.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Google Maps Places Autocomplete setup
+  const placesLib = useMapsLibrary('places');
+  const [sessionToken, setSessionToken] = useState<any>(null);
+
+  useEffect(() => {
+    if (!placesLib) return;
+    try {
+      setSessionToken(new google.maps.places.AutocompleteSessionToken());
+    } catch (err) {
+      console.warn("Could not instantiate AutocompleteSessionToken:", err);
+    }
+  }, [placesLib]);
+
+  const handleSchoolQuery = (queryInput: string) => {
+    setSearchQuery(queryInput);
+    if (!queryInput.trim()) {
+      setPredictions([]);
+      return;
+    }
+
+    if (placesLib) {
+      try {
+        const autocompleteService = new google.maps.places.AutocompleteService();
+        autocompleteService.getPlacePredictions({
+          input: queryInput,
+          types: ['school', 'establishment'],
+          sessionToken: sessionToken || undefined
+        }, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+            setPredictions(results.map(r => ({
+              id: r.place_id,
+              name: r.structured_formatting.main_text,
+              address: r.structured_formatting.secondary_text || r.description,
+              isRealGooglePlace: true
+            })));
+          } else {
+            fallbackLocalSearch(queryInput);
+          }
+        });
+      } catch (err) {
+        console.warn("Google Place Predictions query failed, using mock list:", err);
+        fallbackLocalSearch(queryInput);
+      }
+    } else {
+      fallbackLocalSearch(queryInput);
+    }
+  };
+
+  const fallbackLocalSearch = (queryInput: string) => {
+    const defaultSuggestions = [
+      { id: 'jesse_academy', name: 'Jesse Math Academy', address: 'Westminster, London, UK' },
+      { id: 'sunset_rockstar', name: 'Sunset Rockstar School', address: 'Los Angeles, California, USA' },
+      { id: 'lincoln_high', name: 'Lincoln High School', address: 'Boston, Massachusetts, USA' },
+      { id: 'oakwood_primary', name: 'Oakwood Primary School', address: 'Manchester, UK' }
+    ];
+    const filtered = defaultSuggestions.filter(item => item.name.toLowerCase().includes(queryInput.toLowerCase()));
+    
+    // Always append option to self-register
+    const results: any[] = [...filtered];
+    if (queryInput.trim().length >= 3 && !filtered.some(f => f.name.toLowerCase() === queryInput.toLowerCase())) {
+      results.push({
+        id: `custom_${Date.now()}`,
+        name: queryInput.trim(),
+        address: '✨ Click to register as an active school',
+        isNewCustomAddition: true
+      });
+    }
+    setPredictions(results);
+  };
+
+  const handleSelectPrediction = async (item: { id: string, name: string, address?: string, isNewCustomAddition?: boolean, isRealGooglePlace?: boolean }) => {
+    setSearchQuery(item.name);
+    setSelectedSchoolObj(item);
+    setPredictions([]);
+    setError(null);
+    setSuccess(null);
+
+    setLoading(true);
+    try {
+      await registerSchool(item.id, item.name);
+      setSelectedSchool(item.id);
+      
+      // Attempt displaying center map of Google school location
+      if (item.isRealGooglePlace && placesLib) {
+        try {
+          const service = new google.maps.places.PlacesService(document.createElement('div'));
+          service.getDetails({
+            placeId: item.id,
+            fields: ['geometry']
+          }, (placeResult, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && placeResult?.geometry?.location) {
+              setSchoolLocation({
+                lat: placeResult.geometry.location.lat(),
+                lng: placeResult.geometry.location.lng()
+              });
+            }
+          });
+        } catch (mErr) {
+          console.warn("Could not fetch Google place geometry lat/lng coordinates:", mErr);
+        }
+      } else {
+        setSchoolLocation(null);
+      }
+
+      setSuccess(`Success! Selected and registered '${item.name}' system entry.`);
+      const list = await fetchAllSchools();
+      setSchoolsList(list);
+    } catch (err: any) {
+      setError("Failed to register school. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTeacherSignupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!selectedSchool) {
+      setError("Please search and select the real-life school you work for first!");
+      return;
+    }
+    if (!teacherNameSignup.trim() || !classSignup.trim() || !teacherUsernameSignup.trim() || !teacherPasswordSignup.trim()) {
+      setError("All fields (Teacher Name, Class, Username, and Password) are strictly required!");
+      return;
+    }
+
+    if (teacherUsernameSignup.includes(' ')) {
+      setError("Spaces are not permitted in requested teacher usernames!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Create teacher account in Firestore 'teachers' collection
+      const teacherId = await addTeacher({
+        teacher_name: teacherNameSignup.trim(),
+        username: teacherUsernameSignup.trim().toLowerCase(),
+        password: teacherPasswordSignup.trim(),
+        school_id: selectedSchool,
+        assigned_class: classSignup.trim()
+      });
+
+      // 2. Select this school and log in immediately!
+      const schoolObj = schoolsList.find(s => s.id === selectedSchool);
+      const schoolName = schoolObj ? schoolObj.school_name : (selectedSchoolObj?.name || "Your Math School");
+
+      localStorage.setItem('jesse_rock_role', 'teacher');
+      localStorage.setItem('jesse_rock_school_id', selectedSchool);
+      localStorage.setItem('jesse_rock_school_name', schoolName);
+      localStorage.setItem('jesse_rock_class_name', classSignup.trim());
+      localStorage.setItem('jesse_rock_real_name', teacherNameSignup.trim());
+      localStorage.setItem('jesse_rock_user_id', teacherId);
+      localStorage.setItem('jesse_rock_my_username', teacherUsernameSignup.trim().toLowerCase());
+      localStorage.setItem('jesse_rock_device_id', teacherId);
+
+      setSuccess(`Congratulations, Teacher ${teacherNameSignup}! Your class platform is now fully synchronized! Redirecting...`);
+      
+      setTimeout(() => {
+        onAuthSuccess(teacherUsernameSignup.trim().toLowerCase(), teacherId);
+      }, 1500);
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to register new class teacher profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,138 +490,393 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-slate-900/60 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[2.5rem] shadow-2xl relative z-10 space-y-8"
+        className="w-full max-w-sm bg-slate-900/60 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-2xl relative z-10 space-y-6"
       >
         {/* Brand/Game Logo */}
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-2.5">
           <motion.div 
             whileHover={{ scale: 1.1, rotate: 12 }}
-            className="w-16 h-16 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-[1.25rem] flex items-center justify-center shadow-lg shadow-violet-500/30 mx-auto cursor-pointer"
+            className="w-14 h-14 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-[1.25rem] flex items-center justify-center shadow-lg shadow-violet-500/30 mx-auto cursor-pointer"
           >
-            <Trophy className="text-white" size={28} />
+            <Trophy className="text-white" size={24} />
           </motion.div>
           
-          <h1 className="text-3xl font-display font-black tracking-tight text-white leading-none">
+          <h1 className="text-2xl font-display font-black tracking-tight text-white leading-none">
             JESSE ROCK<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400 text-2xl font-black tracking-widest uppercase">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400 text-xl font-black tracking-widest uppercase">
               MATH ARENA 👑
             </span>
           </h1>
           
-          <div className="py-2 px-3 bg-violet-600/10 border border-violet-500/20 text-violet-300 rounded-xl text-[11px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 justify-center mx-auto">
-            <Lock size={12} className="text-violet-400 animate-pulse" /> Unified Log In & Register Center
+          <div className="py-1 px-2 bg-violet-600/10 border border-violet-500/20 text-violet-300 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 justify-center mx-auto">
+            <Lock size={10} className="text-violet-400 animate-pulse" /> School & Guest Security Hub
           </div>
-
-          <p className="text-slate-400 text-xs px-2 leading-relaxed">
-            Specify your legendary Username and Math Rockstar Password below. New players will have their account registered instantly!
-          </p>
         </div>
 
-        {/* Claim Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold rounded-2xl flex items-start gap-2.5"
-            >
-              <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </motion.div>
-          )}
+        {/* Multi-Tab Selector */}
+        <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-white/5 gap-1.5 shadow-md">
+          <button
+            type="button"
+            onClick={() => { setLoginTab('individual'); setError(null); setSuccess(null); }}
+            className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              loginTab === 'individual'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-pink-500/5'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <User size={12} /> Individual
+          </button>
+          <button
+            type="button"
+            onClick={() => { setLoginTab('school'); setError(null); setSuccess(null); }}
+            className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              loginTab === 'school'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-blue-500/5'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <GraduationCap size={13} /> School Login
+          </button>
+        </div>
 
-          {success && (
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold rounded-2xl flex items-start gap-2.5"
-            >
-              <Check size={16} className="shrink-0 mt-0.5" />
-              <span>{success}</span>
-            </motion.div>
-          )}
+        {error && (
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-bold rounded-xl flex items-start gap-2"
+          >
+            <ShieldAlert size={14} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </motion.div>
+        )}
 
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-slate-400 tracking-wider block">
-              Legendary Username
-            </label>
-            <div className="relative">
-              <User size={16} className="absolute left-4 top-4 text-slate-400" />
-              <input
-                id="username-entry"
-                type="text"
-                placeholder="GeniusMathMage"
-                value={username}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\s/g, ''); // instantly remove spacing typos
-                  setUsername(val);
-                }}
-                className="w-full pl-11 pr-4 py-3.5 bg-slate-950 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition-all font-semibold placeholder:text-slate-600"
-                autoComplete="off"
-                disabled={loading}
-              />
+        {success && (
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold rounded-xl flex items-start gap-2"
+          >
+            <Check size={14} className="shrink-0 mt-0.5" />
+            <span>{success}</span>
+          </motion.div>
+        )}
+
+        {/* Tab Content 1: Home/Individual Login */}
+        {loginTab === 'individual' ? (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                Legendary Username
+              </label>
+              <div className="relative">
+                <User size={14} className="absolute left-3.5 top-3.5 text-slate-450" />
+                <input
+                  id="username-entry"
+                  type="text"
+                  placeholder="GeniusMathMage"
+                  value={username}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\s/g, '');
+                    setUsername(val);
+                  }}
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold placeholder:text-slate-650"
+                  autoComplete="off"
+                  disabled={loading}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-slate-400 tracking-wider block">
-              Math Rockstar Password
-            </label>
-            <div className="relative">
-              <Lock size={16} className="absolute left-4 top-4 text-slate-400" />
-              <input
-                id="password-entry"
-                type={showPassword ? "text" : "password"}
-                placeholder="Secure numeric PIN or text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-11 py-3.5 bg-slate-950 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition-all font-semibold placeholder:text-slate-600"
-                autoComplete="off"
-                disabled={loading}
-              />
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                Math Rockstar Password
+              </label>
+              <div className="relative">
+                <Lock size={14} className="absolute left-3.5 top-3.5 text-slate-450" />
+                <input
+                  id="password-entry"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password or custom pin"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-9 pr-9 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold placeholder:text-slate-650"
+                  autoComplete="off"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-350 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              id="btn-claim-identity"
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 mt-1"
+            >
+              {loading ? "Checking..." : "ENTER THE ARENA ✨"}
+            </button>
+          </form>
+        ) : (
+          /* Tab Content 2: Live Managed School Login */
+          <div className="space-y-4">
+            {/* School Sub-tabs selector */}
+            <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-white/5 gap-1.5 shadow-md">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-4 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                onClick={() => { setSchoolSubTab('signin'); setError(null); setSuccess(null); }}
+                className={`flex-1 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  schoolSubTab === 'signin'
+                    ? 'bg-slate-800 text-white border border-white/5'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                <LogIn size={11} /> Profile Login
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSchoolSubTab('teachersignup'); setError(null); setSuccess(null); }}
+                className={`flex-1 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  schoolSubTab === 'teachersignup'
+                    ? 'bg-slate-800 text-white border border-white/5'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <PlusCircle size={11} /> Teacher Register
               </button>
             </div>
-          </div>
 
-          <button
-            id="btn-claim-identity"
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-violet-600/30 disabled:opacity-50 mt-2"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">Checking Ledger...</span>
-            ) : (
-              <>
-                <Sparkles size={14} />
-                ENTER THE ARENA
-              </>
+            {/* School selection search box (Real-life Google Maps Place query + Register) */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block flex items-center justify-between">
+                <span>School Autocomplete (Google Maps Search)</span>
+                <span className="text-[8px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">REAL LIFE REGISTERED</span>
+              </label>
+              
+              <div className="relative">
+                <MapPin size={13} className="absolute left-3.5 top-3.5 text-slate-450" />
+                <input
+                  type="text"
+                  placeholder="Type school name..."
+                  value={searchQuery}
+                  onChange={(e) => handleSchoolQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold placeholder:text-slate-650"
+                  disabled={loading}
+                />
+
+                {predictions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-slate-900 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-[160px] overflow-y-auto">
+                    {predictions.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleSelectPrediction(p)}
+                        className="w-full px-3 py-2.5 hover:bg-white/5 text-left text-xs border-b border-white/5 flex flex-col gap-0.5"
+                      >
+                        <span className="font-extrabold text-white">{p.name}</span>
+                        <span className="text-[9px] text-slate-450 truncate">{p.address}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {selectedSchoolObj && (
+                <div className="p-2 py-1.5 bg-[#00d2ff]/5 border border-[#00d2ff]/10 rounded-lg text-[9px] text-slate-400 font-mono text-left space-y-1 flex flex-col">
+                  <span>Selected Network: <strong className="text-white">{selectedSchoolObj.name}</strong></span>
+                  <span className="truncate text-[8px] text-slate-550">Address: {selectedSchoolObj.address || "Self-Signed Registry Location"}</span>
+                </div>
+              )}
+            </div>
+
+            {/* If Google Maps coordinate is loaded, render a sleek inline map of their building! */}
+            {schoolLocation && (
+              <div className="w-full h-24 rounded-xl overflow-hidden border border-white/10 relative">
+                <Map
+                  defaultCenter={schoolLocation}
+                  defaultZoom={15}
+                  center={schoolLocation}
+                  gestureHandling="none"
+                  disableDefaultUI={true}
+                  mapId="DEMO_MAP_ID"
+                >
+                  <AdvancedMarker position={schoolLocation}>
+                    <Pin background={'#8b5cf6'} glyphColor={'#fff'} borderColor={'#7c3aed'} />
+                  </AdvancedMarker>
+                </Map>
+                <div className="absolute bottom-1 right-1 bg-slate-950/80 px-1.5 py-0.5 rounded text-[8px] font-mono text-slate-400 border border-white/5">
+                  Building Location Map
+                </div>
+              </div>
             )}
-          </button>
-        </form>
+
+            {schoolSubTab === 'signin' ? (
+              /* Subtab Form A: Member profile sign in */
+              <form onSubmit={handleSchoolSubmit} className="space-y-3 text-left">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block flex items-center justify-between">
+                    <span>Target Class Code</span>
+                    <span className="text-[9px] text-slate-500 font-mono font-bold">Skip for Admin</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Year 5B"
+                    value={className}
+                    onChange={(e) => setClassName(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold placeholder:text-slate-650"
+                    autoComplete="off"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                    Classroom Username
+                  </label>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3.5 top-3.5 text-slate-455" />
+                    <input
+                      type="text"
+                      placeholder="e.g. leo_rockstar"
+                      value={schoolUsername}
+                      onChange={(e) => setSchoolUsername(e.target.value.replace(/\s/g, ''))}
+                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold"
+                      autoComplete="off"
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                    Access Code / PIN
+                  </label>
+                  <div className="relative">
+                    <Lock size={14} className="absolute left-3.5 top-3.5 text-slate-455" />
+                    <input
+                      type={showSchoolPassword ? "text" : "password"}
+                      placeholder="e.g. star123"
+                      value={schoolPassword}
+                      onChange={(e) => setSchoolPassword(e.target.value)}
+                      className="w-full pl-9 pr-9 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold"
+                      autoComplete="off"
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSchoolPassword(!showSchoolPassword)}
+                      className="absolute right-3 top-3 text-slate-500 hover:text-slate-350 transition-colors cursor-pointer"
+                    >
+                      {showSchoolPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-550 hover:to-indigo-550 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 mt-1"
+                >
+                  {loading ? "Syncing Gate..." : "ENTER PORTAL 🍏"}
+                </button>
+              </form>
+            ) : (
+              /* Subtab Form B: Teacher self-registration on-the-fly! */
+              <form onSubmit={handleTeacherSignupSubmit} className="space-y-3 text-left">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                    Your Teacher Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Mr. Jesse"
+                    value={teacherNameSignup}
+                    onChange={(e) => setTeacherNameSignup(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold"
+                    autoComplete="off"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                    Class You Teach (e.g., Year 5B)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Year 5B"
+                    value={classSignup}
+                    onChange={(e) => setClassSignup(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold font-mono"
+                    autoComplete="off"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Desired Username
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="teacher_jesse"
+                      value={teacherUsernameSignup}
+                      onChange={(e) => setTeacherUsernameSignup(e.target.value.replace(/\s/g, ''))}
+                      className="w-full px-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold"
+                      autoComplete="off"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Access Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Secret PIN"
+                      value={teacherPasswordSignup}
+                      onChange={(e) => setTeacherPasswordSignup(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-violet-500 transition-all font-semibold"
+                      autoComplete="off"
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 mt-1"
+                >
+                  {loading ? "Spinning Ledger..." : "REGISTER & SYNC 🎓"}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
 
         {/* Footer Navigation Tabs for Terms, Rules */}
-        <div className="flex items-center justify-center gap-4 text-xs pt-4 border-t border-white/5">
+        <div className="flex items-center justify-center gap-4 text-[10px] pt-3 border-t border-white/5">
           <button 
             type="button"
             onClick={() => setShowTerms(true)}
-            className="text-slate-500 hover:text-violet-400 transition-colors cursor-pointer font-bold tracking-tight inline-flex items-center gap-1.5"
+            className="text-slate-500 hover:text-violet-400 transition-colors cursor-pointer font-bold tracking-tight inline-flex items-center gap-1"
           >
-            <FileText size={13} /> Terms & Policies
+            <FileText size={11} /> Terms & Policies
           </button>
           <span className="text-slate-800">•</span>
           <button 
             type="button"
             onClick={() => setShowRules(true)}
-            className="text-slate-500 hover:text-violet-400 transition-colors cursor-pointer font-bold tracking-tight inline-flex items-center gap-1.5"
+            className="text-slate-500 hover:text-violet-400 transition-colors cursor-pointer font-bold tracking-tight inline-flex items-center gap-1"
           >
-            <BookOpen size={13} /> How It Works & Rules
+            <BookOpen size={11} /> How It Works & Rules
           </button>
         </div>
       </motion.div>

@@ -38,6 +38,8 @@ import HomeLanding from './components/HomeLanding';
 import RulesPage from './components/RulesPage';
 import TermsPage from './components/TermsPage';
 import DeveloperPage from './components/DeveloperPage';
+import SchoolDashboards from './components/SchoolDashboards';
+import { updateStudentProgress } from './lib/schoolDb';
 
 
 const INITIAL_STATS: UserStats = {
@@ -89,18 +91,72 @@ export default function App() {
     isCookieBlocked: boolean;
     message: string;
     username: string | null;
+    role?: 'student' | 'teacher' | 'admin' | 'individual';
+    schoolId?: string | null;
+    schoolName?: string | null;
+    className?: string | null;
+    realName?: string | null;
+    userId?: string | null;
   }>({
     isAuthenticated: false,
     isChecking: true,
     isCookieBlocked: false,
     message: "Initializing secure session...",
-    username: null
+    username: null,
+    role: 'individual'
   });
 
   const [userDeviceId, setUserDeviceId] = useState<string | null>(null);
   const [practiceLesson, setPracticeLesson] = useState<Lesson | null>(null);
 
   const fetchAndSyncProfile = async (uname: string, deviceId: string) => {
+    const role = localStorage.getItem('jesse_rock_role') as any || 'individual';
+    const schoolId = localStorage.getItem('jesse_rock_school_id');
+    const schoolName = localStorage.getItem('jesse_rock_school_name');
+    const className = localStorage.getItem('jesse_rock_class_name');
+    const realName = localStorage.getItem('jesse_rock_real_name');
+    const userId = localStorage.getItem('jesse_rock_user_id');
+
+    if (role !== 'individual') {
+      setAuthState({
+        isAuthenticated: true,
+        isChecking: false,
+        isCookieBlocked: false,
+        message: `Welcome back to the Math School Panel, ${realName || uname}!`,
+        username: uname,
+        role,
+        schoolId,
+        schoolName,
+        className,
+        realName,
+        userId
+      });
+
+      if (role === 'student' && userId) {
+        try {
+          const studentDoc = await getDoc(doc(db, 'students', userId));
+          if (studentDoc.exists()) {
+            const studentData = studentDoc.data();
+            const prog = studentData.math_progress_data || { highScore: 0, xp: 100, solved: 0, correctAnswers: 0 };
+            setStats({
+              totalSolved: prog.solved || 0,
+              correctAnswers: prog.correctAnswers || 0,
+              level: Math.floor((prog.xp || 100) / 1000) + 1,
+              xp: prog.xp || 100,
+              streak: 0,
+              bestStreak: 0,
+              history: [],
+              unlockedBadges: ["School Rockstar"],
+              weeklyProgress: undefined
+            });
+          }
+        } catch (e) {
+          console.warn("Failed to fetch student live math progress:", e);
+        }
+      }
+      return;
+    }
+
     const userDocRef = doc(db, "users", deviceId);
     let userDoc;
     try {
@@ -198,6 +254,13 @@ export default function App() {
   const handleSignOut = async () => {
     localStorage.removeItem('jesse_rock_my_username');
     localStorage.removeItem('jesse_rock_device_id');
+    localStorage.removeItem('jesse_rock_role');
+    localStorage.removeItem('jesse_rock_school_id');
+    localStorage.removeItem('jesse_rock_school_name');
+    localStorage.removeItem('jesse_rock_class_name');
+    localStorage.removeItem('jesse_rock_real_name');
+    localStorage.removeItem('jesse_rock_user_id');
+
     const freshDeviceId = 'user_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
     localStorage.setItem('jesse_rock_device_id', freshDeviceId);
     setUserDeviceId(freshDeviceId);
@@ -207,7 +270,8 @@ export default function App() {
       isChecking: false,
       isCookieBlocked: false,
       message: "Please enter your name to begin.",
-      username: null
+      username: null,
+      role: 'individual'
     });
   };
 
@@ -295,6 +359,14 @@ export default function App() {
         handleFirestoreError(err, OperationType.WRITE, `users/${userDeviceId}`);
       }
     }
+
+    if (authState.role === 'student' && authState.userId) {
+      try {
+        await updateStudentProgress(authState.userId, score, xpGained, score > 0);
+      } catch (err) {
+        console.warn("School student progress update bypassed / failed:", err);
+      }
+    }
     
     setPracticeLesson(null);
     setActiveTab('dashboard');
@@ -365,6 +437,15 @@ export default function App() {
           setUserDeviceId(matchedUid);
           fetchAndSyncProfile(uname, matchedUid);
         }} 
+      />
+    );
+  }
+
+  if (authState.role === 'teacher' || authState.role === 'admin') {
+    return (
+      <SchoolDashboards 
+        authState={authState} 
+        onSignOut={handleSignOut} 
       />
     );
   }

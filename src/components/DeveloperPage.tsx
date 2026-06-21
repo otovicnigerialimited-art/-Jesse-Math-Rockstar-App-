@@ -212,12 +212,11 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
           <p>Being a developer isn't always easy. My absolute hardest bug happened right when I started vibe coding: <strong>handling and connecting the API logic correctly</strong>. It took a lot of independent problem-solving and exploring, but I didn't give up until the data connected perfectly!</p>
 
           <h3 style={{ color: "#00d2ff", marginTop: "25px", borderBottom: "2px solid #ff0055", paddingBottom: "5px" }}>🛠️ Powered By</h3>
-          <p>This application was engineered using world-class professional developer tools. Special credit and thanks to the companies that made this possible:</p>
+          <p>This application was engineered using world-class professional developer tools. Special credit and thanks to my family:</p>
           <ul style={{ listStyleType: "disc", marginLeft: "20px", color: "#fff" }} className="pl-4 space-y-1">
-            <li><strong>Google AI Studio:</strong> For providing the advanced Gemini family powerhouse models that drive the smart logic.</li>
-            <li><strong>GitHub:</strong> For hosting my project repository and managing my version control.</li>
-            <li><strong>Vercel:</strong> For providing the primary hosting domain and lightning-fast cloud deployment.</li>
-            <li><strong>Google AI Assistant:</strong> For providing continuous engineering support and guidance throughout my deployment journey.</li>
+            <li><strong>My Dad:</strong> For his invaluable technical help and constant motivation.</li>
+            <li><strong>My Siblings:</strong> For their endless support and helpful play-testing.</li>
+            <li><strong>My Family:</strong> For providing the environment that allowed me to code and create!</li>
           </ul>
 
           <div style={{ color: "#00d2ff", marginTop: "30px", background: "rgba(255, 0, 85, 0.1)", padding: "15px", borderRadius: "8px", borderLeft: "4px solid #ff0055" }}>
@@ -226,6 +225,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
           </div>
         </div>
       </section>
+
 
       {/* Grid: Timeline and Interactive Guestbook */}
       <div className="grid lg:grid-cols-12 gap-8">

@@ -186,13 +186,33 @@ export const ADMIN_SEED_ITEMS: ShopItem[] = [
     accent_color: 'from-cyan-400 to-pink-500'
   },
   {
-    id: 'instrument_laser_harp',
-    item_name: 'Cosmic Laser Harp',
-    category: 'instrument',
-    coin_cost: 320,
-    description: 'Beams of direct pure stardust. Play math formulas like music!',
+    id: 'hair_red_hawk',
+    item_name: 'Crimson Spikes',
+    category: 'hair',
+    coin_cost: 120,
+    description: 'Bigger, redder, spikier. Definite rocker aesthetic.',
+    icon_emoji: '👹',
+    rarity: 'Epic',
+    accent_color: 'from-red-600 to-red-800'
+  },
+  {
+    id: 'body_star_cloak',
+    item_name: 'Stardust Cape',
+    category: 'body',
+    coin_cost: 250,
+    description: 'A cloak that seems to have captured the night sky.',
     icon_emoji: '🌌',
     rarity: 'Legendary',
-    accent_color: 'from-indigo-400 via-cyan-400 to-teal-400'
+    accent_color: 'from-indigo-900 to-purple-900'
+  },
+  {
+    id: 'instrument_blue_bass',
+    item_name: 'Electric Blues Bass',
+    category: 'instrument',
+    coin_cost: 100,
+    description: 'Deep, thumping blue bass guitar for those low notes.',
+    icon_emoji: '🎸',
+    rarity: 'Rare',
+    accent_color: 'from-blue-500 to-blue-700'
   }
 ];

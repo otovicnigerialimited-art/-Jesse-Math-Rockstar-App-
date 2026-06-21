@@ -32,7 +32,7 @@ export default function RulesPage({ onNavigateToTab }: RulesPageProps) {
     },
     {
       icon: <Zap className="text-amber-400" size={24} />,
-      title: "TTRS Speed Difficulty Multipliers",
+      title: "Speed Difficulty Multipliers",
       desc: "Challenge your boundaries! Switching difficulty levels from easy, medium, hard to extreme in the settings increases your base reward. Face harder questions for much higher payouts!"
     },
     {

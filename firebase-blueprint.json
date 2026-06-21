@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["username"]
+    },
+    "School": {
+      "title": "School",
+      "description": "School information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Teacher profile",
+      "type": "object",
+      "properties": {
+        "teacher_name": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["teacher_name", "email"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student profile",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" }
+      },
+      "required": ["username"]
+    }
+  },
+  "firestore": {
+    "/usernames/{username}": { "schema": "User", "description": "Usernames collection" },
+    "/users/{userId}": { "schema": "User", "description": "Users collection" },
+    "/schools/{schoolId}": { "schema": "School", "description": "Schools collection" },
+    "/teachers/{teacherId}": { "schema": "Teacher", "description": "Teachers collection" },
+    "/students/{studentId}": { "schema": "Student", "description": "Students collection" }
+  }
+}

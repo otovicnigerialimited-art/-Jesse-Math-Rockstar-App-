@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -22,6 +22,7 @@ import {
   Star,
   Globe,
   User,
+  Heart,
   ShoppingBag
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
@@ -40,6 +41,8 @@ import HomeLanding from './components/HomeLanding';
 import RulesPage from './components/RulesPage';
 import TermsPage from './components/TermsPage';
 import DeveloperPage from './components/DeveloperPage';
+import FamilyPage from './components/FamilyPage';
+import LearnArena from './components/LearnArena';
 import SchoolDashboards from './components/SchoolDashboards';
 import CreatorPanel from './components/CreatorPanel';
 import AvatarPreview from './components/AvatarPreview';
@@ -59,7 +62,8 @@ const INITIAL_STATS: UserStats = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'shop'>('home');
+  const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'family' | 'learn' | 'shop'>('home');
+  const [isPending, startTransition] = useTransition();
   const [showGuestFinishDialog, setShowGuestFinishDialog] = useState(false);
   const [showAnniversaryDialog, setShowAnniversaryDialog] = useState(false);
   const [showGiftDialog, setShowGiftDialog] = useState<{amount: number} | null>(null);
@@ -87,7 +91,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy');
 
-  // Custom configurations (TTRS sound, avatars & speed)
+  // Custom configurations (Sound, avatars & speed)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [configSettings, setConfigSettings] = useState(() => {
     const saved = localStorage.getItem('math_rockstar_config');
@@ -563,10 +567,12 @@ export default function App() {
     { id: 'shop', label: '🔥 Rock Shop', icon: ShoppingBag },
     { id: 'hub', label: 'Learning Hub', icon: BookOpen },
     { id: 'quiz', label: 'Play Arena', icon: Trophy },
+    { id: 'learn', label: 'Learn Arena', icon: BookOpen },
     { id: 'badges', label: 'Badges & Quests', icon: Star },
     { id: 'rules', label: 'How It Works & Rules', icon: HelpCircle },
     { id: 'terms', label: 'Terms & Policies', icon: FileText },
     { id: 'developer', label: 'Meet Developer', icon: User },
+    { id: 'family', label: 'Family Credits', icon: Heart },
     { id: 'creator', label: "Jesse's Desk 👑", icon: ShieldCheck }
   ];
 
@@ -645,8 +651,10 @@ export default function App() {
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id as any);
                   setIsSidebarOpen(false);
+                  startTransition(() => {
+                    setActiveTab(item.id as any);
+                  });
                 }}
                 className={cn(
                   "w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-xs font-bold transition-all relative",
@@ -962,6 +970,28 @@ export default function App() {
               </motion.div>
             )}
 
+            {activeTab === 'family' && (
+              <motion.div
+                key="family"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+              >
+                <FamilyPage />
+              </motion.div>
+            )}
+
+            {activeTab === 'learn' && (
+              <motion.div
+                key="learn"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+              >
+                <LearnArena onExit={() => setActiveTab('home')} />
+              </motion.div>
+            )}
+
             {activeTab === 'creator' && (
               <motion.div
                 key="creator"
@@ -991,7 +1021,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* Settings Modal (TTRS Style) */}
+      {/* Settings Modal Style */}
       <AnimatePresence>
         {isSettingsOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1112,7 +1142,7 @@ export default function App() {
                 {/* Speed Tweak Section (Difficulty) */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Award size={14} className="text-cyan-400" /> TTRS Speed / Difficulty
+                    <Award size={14} className="text-cyan-400" /> Speed / Difficulty
                   </h4>
                   <div className="grid grid-cols-4 gap-2">
                     {(['easy', 'medium', 'hard', 'extreme'] as Difficulty[]).map((d) => (

@@ -484,7 +484,7 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
               <div className="space-y-3 max-w-lg mx-auto">
                 <h3 className="text-2xl font-black text-slate-100">Claim the Rockstar Spotlight!</h3>
                 <p className="text-slate-400 text-xs leading-relaxed">
-                  Step up to test your arithmetic speed against other real human math scholars. Both competitors receive the exact same **20 hard problems** under a **5-minute timer**.
+                  Step up to test your arithmetic speed against other real human math scholars. Both competitors receive the exact same **20 progressive problems (5 easy, 5 medium, 10 hard)** under a **5-minute timer**.
                 </p>
                 <div className="py-2.5 px-4 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-[10px] font-black uppercase tracking-wider inline-block">
                   ★ Winner Reward: +40 Brain Streak & 150 gold coins!

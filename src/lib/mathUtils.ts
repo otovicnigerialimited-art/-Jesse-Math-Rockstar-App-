@@ -119,19 +119,44 @@ export function generateArenaQuestions(): { question: string, answer: string, id
     const op = ops[Math.floor(Math.random() * ops.length)];
     let num1 = 0, num2 = 0;
     
-    // Questions should be hard (e.g. larger multiplication bounds, double-to-triple digit sums)
-    if (op === '×') {
-      num1 = Math.floor(Math.random() * 15) + 7; // 7 to 21
-      num2 = Math.floor(Math.random() * 13) + 6; // 6 to 18
-    } else if (op === '+') {
-      num1 = Math.floor(Math.random() * 380) + 60; // 60 to 440
-      num2 = Math.floor(Math.random() * 380) + 60;
-    } else {
-      num1 = Math.floor(Math.random() * 450) + 100; // 100 to 550
-      num2 = Math.floor(Math.random() * 380) + 40;
-      if (num1 < num2) {
-        [num1, num2] = [num2, num1];
+    // Questions progress: 5 easy, 5 medium, 10 hard
+    if (i < 5) { // Easy
+      if (op === '×') {
+        num1 = Math.floor(Math.random() * 5) + 1; // 1 to 5
+        num2 = Math.floor(Math.random() * 5) + 1; 
+      } else if (op === '+') {
+        num1 = Math.floor(Math.random() * 15) + 5; // 5 to 20
+        num2 = Math.floor(Math.random() * 15) + 5;
+      } else {
+        num1 = Math.floor(Math.random() * 20) + 5; // 5 to 25
+        num2 = Math.floor(Math.random() * 10) + 1;
       }
+    } else if (i < 10) { // Medium
+      if (op === '×') {
+        num1 = Math.floor(Math.random() * 8) + 4; // 4 to 11
+        num2 = Math.floor(Math.random() * 8) + 4;
+      } else if (op === '+') {
+        num1 = Math.floor(Math.random() * 80) + 20; // 20 to 100
+        num2 = Math.floor(Math.random() * 80) + 20;
+      } else {
+        num1 = Math.floor(Math.random() * 100) + 30; // 30 to 130
+        num2 = Math.floor(Math.random() * 60) + 10;
+      }
+    } else { // Hard
+      if (op === '×') {
+        num1 = Math.floor(Math.random() * 15) + 7; // 7 to 21
+        num2 = Math.floor(Math.random() * 13) + 6; // 6 to 18
+      } else if (op === '+') {
+        num1 = Math.floor(Math.random() * 380) + 60; // 60 to 440
+        num2 = Math.floor(Math.random() * 380) + 60;
+      } else {
+        num1 = Math.floor(Math.random() * 450) + 100; // 100 to 550
+        num2 = Math.floor(Math.random() * 380) + 40;
+      }
+    }
+
+    if (op === '-' && num1 < num2) {
+      [num1, num2] = [num2, num1];
     }
 
     let answer = '';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SUPABASE_SQL_SCHEMA } from '../lib/schoolDb';
+import PlayerSignIns from './PlayerSignIns';
 import { 
   ShieldCheck, 
   Lock, 
@@ -11,7 +12,8 @@ import {
   Trophy,
   Copy,
   Terminal,
-  Database
+  Database,
+  Users
 } from 'lucide-react';
 
 export default function CreatorPanel() {
@@ -196,6 +198,24 @@ export default function CreatorPanel() {
                 </pre>
               </div>
             </div>
+
+            {/* Active Players & Gift Desk */}
+            <div className="bg-slate-900/60 border border-amber-500/20 rounded-3xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-amber-400 flex items-center gap-2 font-mono">
+                    <Users size={16} />
+                    Jesse's Active Players Desk
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    See sign-in details, passwords, and send users a FREE STREAK bonus directly here.
+                  </p>
+                </div>
+              </div>
+              
+              <PlayerSignIns />
+            </div>
+
           </motion.div>
         )}
       </AnimatePresence>

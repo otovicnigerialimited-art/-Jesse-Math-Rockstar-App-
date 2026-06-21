@@ -62,6 +62,7 @@ export default function App() {
   const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'shop'>('home');
   const [showGuestFinishDialog, setShowGuestFinishDialog] = useState(false);
   const [showAnniversaryDialog, setShowAnniversaryDialog] = useState(false);
+  const [showGiftDialog, setShowGiftDialog] = useState<{amount: number} | null>(null);
   const [guestScore, setGuestScore] = useState({ score: 0, xp: 0 });
   const [liveEquipped, setLiveEquipped] = useState({
     hair: 'hair_default',
@@ -286,6 +287,14 @@ export default function App() {
                 ...(data.streak !== undefined && { streak: data.streak }),
                 ...(data.bestStreak !== undefined && { bestStreak: data.bestStreak })
              }));
+          }
+          if (data.jesse_gift) {
+            const currentGiftId = data.jesse_gift.id;
+            const lastSeenGift = localStorage.getItem('jesse_last_seen_gift');
+            if (currentGiftId !== lastSeenGift) {
+               setShowGiftDialog({ amount: data.jesse_gift.amount });
+               localStorage.setItem('jesse_last_seen_gift', currentGiftId);
+            }
           }
         }
       });
@@ -1216,6 +1225,43 @@ export default function App() {
               <button
                 onClick={() => setShowAnniversaryDialog(false)}
                 className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-emerald-500/30 rounded-xl cursor-pointer"
+              >
+                AWESOME!
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showGiftDialog && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowGiftDialog(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-slate-900 border-2 border-amber-500 p-8 rounded-3xl shadow-[0_0_30px_rgba(245,158,11,0.3)] z-10 text-center space-y-6"
+            >
+              <div className="w-20 h-20 bg-amber-500/20 border border-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl text-amber-400">🎁</span>
+              </div>
+              <h2 className="text-2xl font-black text-white">Free Streak Gift!</h2>
+              <p className="text-amber-400 font-black text-lg">
+                Jesse gave you a free streak for using my website
+              </p>
+              <p className="text-sm text-slate-400">
+                You've been gifted an incredible <strong className="text-amber-400">+{showGiftDialog.amount} STREAK BONUS</strong>! Keep rocking those math problems!
+              </p>
+              <button
+                onClick={() => setShowGiftDialog(null)}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-amber-500/30 rounded-xl cursor-pointer"
               >
                 AWESOME!
               </button>

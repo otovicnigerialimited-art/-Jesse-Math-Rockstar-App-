@@ -371,18 +371,6 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
           </div>
         </div>
       </div>
-
-      {/* Jesse's Secret Admin Desk */}
-      {(currentUser.role === 'admin' || currentUser.role === 'teacher') && (
-        <div className="mt-12 space-y-4 border-t border-white/10 pt-8">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="text-emerald-400" size={24} />
-            <h3 className="text-xl font-black text-white uppercase tracking-wider">Jesse's Player Database</h3>
-          </div>
-          <p className="text-sm text-slate-400 mb-6">See all active players, when they signed in, and assign them free streak points!</p>
-          <PlayerSignIns />
-        </div>
-      )}
     </div>
   );
 }

@@ -409,9 +409,9 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
           const curStreak = stats.streak || 0;
           try {
             await updateDoc(userRef, {
-              streak: curStreak + 40,
+              streak: curStreak + 20,
               xp: (stats.xp || 0) + 200, // custom XP reward
-              coins: (stats.coins || 0) + 150
+              coins: curStreak + 20 // Math balance (coins) is now the same as streak
             });
           } catch (err) {
             handleFirestoreError(err, OperationType.UPDATE, `users/${currentUser.uid}`);

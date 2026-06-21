@@ -49,7 +49,7 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
   const [loadingShop, setLoadingShop] = useState(true);
   
   // Student or User live sync state
-  const [userCoins, setUserCoins] = useState<number>(0);
+  const [userStreak, setUserStreak] = useState<number>(0);
   const [purchasedItemIds, setPurchasedItemIds] = useState<string[]>([]);
   const [equippedItems, setEquippedItems] = useState<{ hair: string; body: string; instrument: string }>({
     hair: 'hair_default',
@@ -115,22 +115,22 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
         const data = snap.data();
         
         // Handle Student structure vs User structure
-        let coins = 0;
+        let streak = 0;
         let pItems: string[] = [];
         let eqItems = { hair: 'hair_default', body: 'body_default', instrument: 'instrument_default' };
 
         if (role === 'student') {
-          // If the math_progress_data has coins or of top-level
-          coins = typeof data.coins !== 'undefined' ? data.coins : (data.math_progress_data?.coins || 100);
+          // If the math_progress_data has streak - we use streak as balance
+          streak = typeof data.streak !== 'undefined' ? data.streak : (data.math_progress_data?.streak || 0);
           pItems = data.purchased_items || [];
           eqItems = data.equipped_items || { hair: 'hair_default', body: 'body_default', instrument: 'instrument_default' };
         } else {
-          coins = typeof data.coins !== 'undefined' ? data.coins : 100;
+          streak = typeof data.streak !== 'undefined' ? data.streak : 0;
           pItems = data.purchased_items || [];
           eqItems = data.equipped_items || { hair: 'hair_default', body: 'body_default', instrument: 'instrument_default' };
         }
 
-        setUserCoins(coins);
+        setUserStreak(streak);
         setPurchasedItemIds(pItems);
         
         // Default fallbacks for equipped elements
@@ -235,7 +235,7 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
       }
       
       const freshData = freshSnap.data();
-      const freshCoins = typeof freshData.coins !== 'undefined' ? freshData.coins : (freshData.math_progress_data?.coins || 100);
+      const freshStreak = typeof freshData.streak !== 'undefined' ? freshData.streak : (freshData.math_progress_data?.streak || 0);
       const freshPurchased = freshData.purchased_items || [];
 
       // Double ownership checker
@@ -244,11 +244,11 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
         return;
       }
 
-      // Check coin availability
-      if (freshCoins < item.coin_cost) {
+      // Check balance (streak) availability
+      if (freshStreak < item.coin_cost) {
         setShakingCardId(item.id);
         playRockSound('error');
-        setErrorMessage("Rock louder! Earn more math coins in the Play Arena to unlock this!");
+        setErrorMessage("Rock louder! Earn more streak in the Play Arena to unlock this!");
         
         // Remove shake after half a second
         setTimeout(() => setShakingCardId(null), 600);
@@ -256,12 +256,12 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
       }
 
       // 2. Perform Atomic deduction & unlock
-      const updatedCoins = freshCoins - item.coin_cost;
+      const updatedStreak = freshStreak - item.coin_cost;
       const updatedPurchased = [...freshPurchased, item.id];
 
       // Build data block
       const updateData: any = {
-        coins: updatedCoins,
+        streak: updatedStreak, // Streak is balance now
         purchased_items: updatedPurchased
       };
 
@@ -269,7 +269,7 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
       if (role === 'student' && freshData.math_progress_data) {
         updateData.math_progress_data = {
           ...freshData.math_progress_data,
-          coins: updatedCoins
+          streak: updatedStreak // Streak is balance now
         };
       }
 
@@ -362,16 +362,16 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
           </div>
         </div>
 
-        {/* Live Coin Balance box */}
+        {/* Live Balance box */}
         <div className="flex items-center gap-4 bg-slate-950/80 border border-amber-500/30 rounded-2xl p-4 shrink-0 shadow-lg relative overflow-hidden group">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
           <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center border border-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform duration-300">
-            <Coins size={22} className="animate-spin-slow text-amber-400" />
+            <Flame size={22} className="animate-pulse text-amber-400" />
           </div>
           <div>
             <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider leading-none">Your Math Balance</p>
             <p className="text-2xl font-black font-mono text-amber-400 mt-1 flex items-center gap-1.5">
-              {userCoins.toLocaleString()} <span className="text-xs text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tight">Coins</span>
+              {userStreak.toLocaleString()} <span className="text-xs text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tight">Streak</span>
             </p>
           </div>
         </div>
@@ -432,7 +432,7 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
                 onClick={() => onNavigateToTab('quiz')}
                 className="w-full py-3.5 bg-gradient-to-r from-brand-primary to-indigo-650 hover:opacity-90 font-black uppercase text-xs tracking-widest rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-brand-primary/10"
               >
-                <Gamepad2 size={13} /> Earn More Coins In Arena <ChevronRight size={12} />
+                <Gamepad2 size={13} /> Earn More Streak In Arena <ChevronRight size={12} />
               </button>
             )}
           </div>

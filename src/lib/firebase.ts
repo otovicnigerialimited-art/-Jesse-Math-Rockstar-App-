@@ -13,8 +13,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true
-}, "ai-studio-fdec55b7-ba82-44d4-ae95-0c5de616e19f");
+const db = initializeFirestore(app, {}, "ai-studio-fdec55b7-ba82-44d4-ae95-0c5de616e19f");
 
 export { app, auth, db };

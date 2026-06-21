@@ -292,7 +292,7 @@ export default function App() {
                 ...(data.bestStreak !== undefined && { bestStreak: data.bestStreak })
              }));
           }
-          if (data.jesse_gift) {
+          if (data.jesse_gift && data.jesse_gift.type === 'streak') {
             const currentGiftId = data.jesse_gift.id;
             const lastSeenGift = localStorage.getItem('jesse_last_seen_gift');
             if (currentGiftId !== lastSeenGift) {

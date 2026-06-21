@@ -59,7 +59,8 @@ export default function PlayerSignIns() {
       await updateDoc(doc(db, colName, playerId), {
         streak: increment(amount),
         bestStreak: increment(amount),
-        jesse_gift: { id: Date.now().toString(), amount }
+        coins: increment(amount), // Sync balance with streak
+        jesse_gift: { id: Date.now().toString(), amount, type: 'streak' }
       }); // Real-time listener will pick this up
       
       // Clear input after sending

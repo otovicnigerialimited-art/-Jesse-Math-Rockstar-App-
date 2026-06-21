@@ -350,16 +350,16 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-950 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-tr from-purple-900 via-indigo-950 to-pink-900 relative overflow-hidden font-sans">
       {/* Background radial soft lights */}
-      <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-pink-500/30 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/30 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
 
       {/* Main Container */}
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-slate-900/60 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-2xl relative z-10 space-y-6"
+        className="w-full max-w-sm bg-slate-900/80 backdrop-blur-2xl border-2 border-pink-500/50 p-6 md:p-8 rounded-[2.5rem] shadow-neon relative z-10 space-y-6"
       >
         {/* Logo and Brand details */}
         <div className="text-center space-y-2.5">
@@ -372,7 +372,7 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
           
           <h1 className="text-2xl font-display font-black tracking-tight text-white leading-none">
             JESSE ROCK<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400 text-xl font-black tracking-widest uppercase">
+            <span className="bg-gradient-to-r from-yellow-400 via-pink-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(244,63,94,0.4)] text-xl font-black tracking-widest uppercase">
               MATH ARENA 👑
             </span>
           </h1>
@@ -389,8 +389,8 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
             onClick={() => { setLoginTab('individual'); setError(null); setSuccess(null); }}
             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
               loginTab === 'individual'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <User size={12} />
@@ -402,8 +402,8 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
             onClick={() => { setLoginTab('student'); setError(null); setSuccess(null); }}
             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
               loginTab === 'student'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <LogIn size={11} />
@@ -415,8 +415,8 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
             onClick={() => { setLoginTab('teacher'); setError(null); setSuccess(null); }}
             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
               loginTab === 'teacher'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <GraduationCap size={12} />
@@ -496,7 +496,7 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:brightness-110 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_15px_rgba(236,72,153,0.5)] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {loading ? "Verifying..." : "ENTER INDIVIDUAL PLAY ✨"}
             </button>
@@ -552,7 +552,7 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:brightness-110 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+              className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_15px_rgba(236,72,153,0.5)] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {loading ? "Authenticating Student..." : "ENTER SCHOOL ARENA 🍏"}
             </button>
@@ -611,7 +611,7 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-teal-600 to-indigo-600 hover:brightness-110 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+                  className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_15px_rgba(236,72,153,0.5)] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <LogIn size={13} />
                   <span>{loading ? "Checking Database..." : "LOGIN TEACHER CABINET"}</span>
@@ -694,7 +694,7 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-550 hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+                  className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_15px_rgba(236,72,153,0.5)] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <UserPlus size={13} />
                   <span>{loading ? "Creating..." : "REGISTER TEACHER CABINET"}</span>

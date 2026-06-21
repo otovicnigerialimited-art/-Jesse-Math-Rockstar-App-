@@ -37,6 +37,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /school_students/{docId} {
+      allow read, write: if true;
+    }
+
+    match /shop_items/{docId} {
+      allow read, write: if true;
+    }
+
     match /student_activity_logs/{docId} {
       allow read, write: if true;
     }

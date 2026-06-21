@@ -21,6 +21,10 @@
   @apply bg-white/10 backdrop-blur-md border border-white/20;
 }
 
+.shadow-neon {
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.5), 0 0 30px rgba(139, 92, 246, 0.3);
+}
+
 .rock-shadow {
   box-shadow: 0 0 20px rgba(255, 0, 85, 0.3);
 }

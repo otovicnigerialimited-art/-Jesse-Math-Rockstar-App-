@@ -499,7 +499,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#0b132b]/95 text-slate-50 font-sans selection:bg-brand-primary selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen flex bg-gradient-to-tr from-purple-900 via-indigo-950 to-pink-900 text-slate-50 font-sans selection:bg-pink-500 selection:text-white relative overflow-x-hidden">
       {/* Dynamic Floating Emojis Background */}
       <div className="floating-bg-container">
         {backgroundEmojis.map((emoji) => (
@@ -532,7 +532,7 @@ export default function App() {
                 </div>
                 <h1 className="text-2xl font-display font-black tracking-tight leading-tight wiggle-hover cursor-pointer">
                   JESSE ROCK<br />
-                  <span className="text-brand-primary text-xl">MATH</span>
+                  <span className="bg-gradient-to-r from-yellow-400 via-pink-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(244,63,94,0.4)] tracking-widest text-xl uppercase">MATH ARENA 👑</span>
                 </h1>
               </div>
 
@@ -633,7 +633,7 @@ export default function App() {
               </div>
               <span className="text-xs font-display font-black tracking-tight leading-none text-white wiggle-hover cursor-pointer">
                 JESSE ROCK<br />
-                <span className="text-brand-primary text-xs">MATH 👑</span>
+                <span className="bg-gradient-to-r from-yellow-400 via-pink-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(244,63,94,0.4)] uppercase">MATH ARENA 👑</span>
               </span>
             </div>
 

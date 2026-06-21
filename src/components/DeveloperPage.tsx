@@ -18,8 +18,10 @@ import {
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
+import PlayerSignIns from './PlayerSignIns';
+
 interface DeveloperPageProps {
-  currentUser: { uid: string; username: string };
+  currentUser: { uid: string; username: string; role?: string };
 }
 
 export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
@@ -263,76 +265,75 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
             <p className="text-xs text-slate-500 font-medium">Leave support matches, notes of encouragement, or ratings!</p>
           </div>
 
-          <form onSubmit={handlePostComment} className="p-6 bg-slate-900/35 border border-white/5 rounded-3xl space-y-4">
-            <div className="flex gap-2">
-              {['🎸', '⚡', '👑', '🔥', '🏆', '👾'].map((icon) => (
-                <button
-                  key={icon}
-                  type="button"
-                  onClick={() => setAvatarIcon(icon)}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-transform hover:scale-110 cursor-pointer ${
-                    avatarIcon === icon ? 'bg-violet-600 border border-violet-400' : 'bg-slate-950 border border-white/5'
-                  }`}
-                >
-                  {icon}
-                </button>
-              ))}
+          {currentUser.role !== 'teacher' && currentUser.role !== 'admin' ? (
+            <div className="p-6 bg-slate-900/35 border border-white/5 rounded-3xl text-center space-y-3">
+              <ShieldCheck className="w-10 h-10 text-slate-500 mx-auto" />
+              <h4 className="text-sm font-black text-white uppercase">Guestbook Locked</h4>
+              <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                To keep our Young Genius scholars safe and prevent the sharing of sensitive information, signing the Guestbook is restricted. Only verified Teacher accounts can leave notes of encouragement for Jesse.
+              </p>
             </div>
-
-            {/* Role Selector */}
-            <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
-                Are you a:
-              </span>
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setRole('kid')}
-                  className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    role === 'kid'
-                      ? 'bg-[#00d2ff]/10 border-[#00d2ff] text-[#00d2ff] shadow-sm shadow-[#00d2ff]/20 scale-[1.02]'
-                      : 'bg-slate-950 border-white/5 text-slate-400 hover:text-slate-350'
-                  }`}
-                >
-                  <span>🎮 Kid Scholar</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('adult')}
-                  className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    role === 'adult'
-                      ? 'bg-[#ff0055]/10 border-[#ff0055] text-[#ff0055] shadow-sm shadow-[#ff0055]/20 scale-[1.02]'
-                      : 'bg-slate-950 border-white/5 text-slate-400 hover:text-slate-355'
-                  }`}
-                >
-                  <span>🍎 Parent or Teacher</span>
-                </button>
+          ) : (
+            <form onSubmit={handlePostComment} className="p-6 bg-slate-900/35 border border-white/5 rounded-3xl space-y-4">
+              <div className="flex gap-2">
+                {['🎸', '⚡', '👑', '🔥', '🏆', '👾'].map((icon) => (
+                  <button
+                    key={icon}
+                    type="button"
+                    onClick={() => setAvatarIcon(icon)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-transform hover:scale-110 cursor-pointer ${
+                      avatarIcon === icon ? 'bg-violet-600 border border-violet-400' : 'bg-slate-950 border border-white/5'
+                    }`}
+                  >
+                    {icon}
+                  </button>
+                ))}
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write helpful text, practice milestones, or positive suggestions for Jesse..."
-                maxLength={180}
-                required
-                className="w-full h-24 p-4 bg-slate-950 border border-white/5 rounded-2xl text-xs text-white placeholder:text-slate-650 outline-none focus:border-violet-500 font-semibold"
-              />
-              <div className="flex items-center justify-between text-[10px] text-slate-550 font-bold">
-                <span>Active handle: <strong className="text-slate-300">{currentUser.username || "Local Player"}</strong></span>
-                <span>{commentText.length}/180 chars</span>
+              {/* Role Selector */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                  Are you a:
+                </span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setRole('adult')}
+                    className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      role === 'adult'
+                        ? 'bg-[#ff0055]/10 border-[#ff0055] text-[#ff0055] shadow-sm shadow-[#ff0055]/20 scale-[1.02]'
+                        : 'bg-slate-950 border-white/5 text-slate-400 hover:text-slate-355'
+                    }`}
+                  >
+                    <span>🍎 Teacher</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || !commentText.trim()}
-              className="w-full py-3.5 btn-3d-pink text-white text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Send size={12} /> Post Word of Encouragement
-            </button>
-          </form>
+              <div className="space-y-1">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write helpful text, practice milestones, or positive suggestions for Jesse..."
+                  maxLength={180}
+                  required
+                  className="w-full h-24 p-4 bg-slate-950 border border-white/5 rounded-2xl text-xs text-white placeholder:text-slate-650 outline-none focus:border-violet-500 font-semibold"
+                />
+                <div className="flex items-center justify-between text-[10px] text-slate-550 font-bold">
+                  <span>Active handle: <strong className="text-slate-300">{currentUser.username || "Local Player"}</strong></span>
+                  <span>{commentText.length}/180 chars</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || !commentText.trim()}
+                className="w-full py-3.5 btn-3d-pink text-white text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Send size={12} /> Post Word of Encouragement
+              </button>
+            </form>
+          )}
 
           {/* Render comment outputs from Firestore */}
           <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
@@ -370,6 +371,18 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Jesse's Secret Admin Desk */}
+      {(currentUser.role === 'admin' || currentUser.role === 'teacher') && (
+        <div className="mt-12 space-y-4 border-t border-white/10 pt-8">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="text-emerald-400" size={24} />
+            <h3 className="text-xl font-black text-white uppercase tracking-wider">Jesse's Player Database</h3>
+          </div>
+          <p className="text-sm text-slate-400 mb-6">See all active players, when they signed in, and assign them free streak points!</p>
+          <PlayerSignIns />
+        </div>
+      )}
     </div>
   );
 }

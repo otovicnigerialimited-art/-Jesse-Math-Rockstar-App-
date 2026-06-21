@@ -61,6 +61,7 @@ const INITIAL_STATS: UserStats = {
 export default function App() {
   const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'shop'>('home');
   const [showGuestFinishDialog, setShowGuestFinishDialog] = useState(false);
+  const [showAnniversaryDialog, setShowAnniversaryDialog] = useState(false);
   const [guestScore, setGuestScore] = useState({ score: 0, xp: 0 });
   const [liveEquipped, setLiveEquipped] = useState({
     hair: 'hair_default',
@@ -279,6 +280,13 @@ export default function App() {
               instrument: data.equipped_items.instrument || 'instrument_default'
             });
           }
+          if (data.streak !== undefined || data.bestStreak !== undefined) {
+             setStats(prev => ({
+                ...prev,
+                ...(data.streak !== undefined && { streak: data.streak }),
+                ...(data.bestStreak !== undefined && { bestStreak: data.bestStreak })
+             }));
+          }
         }
       });
       return () => unsub();
@@ -346,6 +354,39 @@ export default function App() {
     const interval = setInterval(updateActivity, 30000);
     return () => clearInterval(interval);
   }, [authState.isAuthenticated, userDeviceId, authState.username]);
+
+  // Anniversary Reward Hook
+  useEffect(() => {
+    if (!authState.isAuthenticated || authState.role === 'guest' || !userDeviceId) return;
+    
+    // Check for June 20th Anniversary
+    const today = new Date();
+    if (today.getMonth() === 5 && today.getDate() === 20) {
+      const currentYear = today.getFullYear();
+      const claimedKey = `jesse_anniversary_claimed_${currentYear}`;
+      
+      if (!localStorage.getItem(claimedKey)) {
+        setTimeout(() => {
+          setStats(prev => {
+            const newStreak = prev.streak + 100;
+            const newBestStreak = Math.max(prev.bestStreak, newStreak);
+            
+            const uid = authState.userId || userDeviceId;
+            if (uid) {
+               const colName = authState.role === 'student' ? 'school_students' : 'users';
+               try {
+                  setDoc(doc(db, colName, uid), { streak: newStreak, bestStreak: newBestStreak }, { merge: true }).catch(console.warn);
+               } catch (e) {}
+            }
+
+            return { ...prev, streak: newStreak, bestStreak: newBestStreak };
+          });
+          localStorage.setItem(claimedKey, "true");
+          setShowAnniversaryDialog(true);
+        }, 1500);
+      }
+    }
+  }, [authState.isAuthenticated, userDeviceId, authState.role, authState.userId]);
 
   const handleQuizFinish = async (score: number, total: number, xpGained: number) => {
     if (authState.role === 'guest') {
@@ -908,7 +949,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
               >
-                <DeveloperPage currentUser={{ uid: userDeviceId || 'guest', username: authState.username || 'Genius Scholar' }} />
+                <DeveloperPage currentUser={{ uid: userDeviceId || 'guest', username: authState.username || 'Genius Scholar', role: authState.role }} />
               </motion.div>
             )}
 
@@ -1139,6 +1180,44 @@ export default function App() {
                 className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-neon rounded-xl cursor-pointer"
               >
                 RETURN TO LOGIN
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Anniversary Dialog */}
+      <AnimatePresence>
+        {showAnniversaryDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAnniversaryDialog(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-slate-900 border-2 border-emerald-500 p-8 rounded-3xl shadow-[0_0_30px_rgba(16,185,129,0.3)] z-10 text-center space-y-6"
+            >
+              <div className="w-20 h-20 bg-emerald-500/20 border border-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl text-emerald-400">🎉</span>
+              </div>
+              <h2 className="text-2xl font-black text-white">Happy Anniversary!</h2>
+              <p className="text-slate-300 font-medium">
+                Jesse Rock Math Arena was developed and published on <span className="text-emerald-400 font-bold">June 20th, 2026</span>!
+              </p>
+              <p className="text-sm text-slate-400">
+                To celebrate, you've been awarded an incredible <strong className="text-amber-400">+100 STREAK BONUS</strong>! Keep rocking those math problems!
+              </p>
+              <button
+                onClick={() => setShowAnniversaryDialog(false)}
+                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-emerald-500/30 rounded-xl cursor-pointer"
+              >
+                AWESOME!
               </button>
             </motion.div>
           </div>

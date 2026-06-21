@@ -39,6 +39,16 @@ export default function RulesPage({ onNavigateToTab }: RulesPageProps) {
       icon: <Award className="text-cyan-400" size={24} />,
       title: "Evolving Ranks & Badge Collectibles",
       desc: "Build the ultimate showcase! Every 1,000 XP you earn unlocks a higher level rank (e.g. Young Genius, Master Mind, Table Titan) and prestigious badges that signify your intellectual supremacy."
+    },
+    {
+      icon: <ShieldCheck className="text-emerald-400" size={24} />,
+      title: "Unique Namespace Claiming Rules",
+      desc: "No two players can have the same username. Each claimed username is globally unique and recorded on our dynamic ledger. If another young scholar tries to use your identical name, they will be blocked with an 'already taken' alert."
+    },
+    {
+      icon: <HelpCircle className="text-pink-400" size={24} />,
+      title: "Device-Bound Profile Identity",
+      desc: "Since we don't request personal emails, usernames are tied to a unique device key on your local browser. If you clear cookies, you might need to register a new unique name. Always write down your math tag unless you have a Teacher account!"
     }
   ];
 

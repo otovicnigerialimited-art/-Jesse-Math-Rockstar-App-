@@ -21,16 +21,18 @@ import {
   HelpCircle,
   Star,
   Globe,
-  User
+  User,
+  ShoppingBag
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Quiz from './components/Quiz';
 import LearningHub from './components/LearningHub';
 import BadgesSection, { getWeeklyData } from './components/BadgesSection';
+import RockShop from './components/RockShop';
 import { UserStats, Difficulty, Lesson } from './types';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from './lib/firestoreUtils';
 import AuthGate from './components/AuthGate';
 import ArenaMatches from './components/ArenaMatches';
@@ -39,7 +41,9 @@ import RulesPage from './components/RulesPage';
 import TermsPage from './components/TermsPage';
 import DeveloperPage from './components/DeveloperPage';
 import SchoolDashboards from './components/SchoolDashboards';
-import { updateStudentProgress } from './lib/schoolDb';
+import CreatorPanel from './components/CreatorPanel';
+import AvatarPreview from './components/AvatarPreview';
+import { updateSchoolStudentProgress } from './lib/schoolDb';
 
 
 const INITIAL_STATS: UserStats = {
@@ -53,7 +57,12 @@ const INITIAL_STATS: UserStats = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer'>('home');
+  const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'shop'>('home');
+  const [liveEquipped, setLiveEquipped] = useState({
+    hair: 'hair_default',
+    body: 'body_default',
+    instrument: 'instrument_default'
+  });
   const backgroundEmojis = React.useMemo(() => {
     const emojis = ['🎸', '👑', '🚀', '➕', '✖️', '🎸', '👑', '🚀', '➖', '➗'];
     return Array.from({ length: 25 }).map((_, i) => ({
@@ -134,10 +143,10 @@ export default function App() {
 
       if (role === 'student' && userId) {
         try {
-          const studentDoc = await getDoc(doc(db, 'students', userId));
+          const studentDoc = await getDoc(doc(db, 'school_students', userId));
           if (studentDoc.exists()) {
             const studentData = studentDoc.data();
-            const prog = studentData.math_progress_data || { highScore: 0, xp: 100, solved: 0, correctAnswers: 0 };
+            const prog = studentData.school_math_progress || studentData.math_progress_data || { highScore: 0, xp: 100, solved: 0, correctAnswers: 0 };
             setStats({
               totalSolved: prog.solved || 0,
               correctAnswers: prog.correctAnswers || 0,
@@ -247,6 +256,32 @@ export default function App() {
       });
     }
   }, []);
+
+  // Real-time equipped avatar subscription hook
+  useEffect(() => {
+    const uid = authState.userId || userDeviceId;
+    if (!uid || !authState.isAuthenticated) return;
+    
+    const colName = authState.role === 'student' ? 'school_students' : 'users';
+    
+    try {
+      const unsub = onSnapshot(doc(db, colName, uid), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.equipped_items) {
+            setLiveEquipped({
+              hair: data.equipped_items.hair || 'hair_default',
+              body: data.equipped_items.body || 'body_default',
+              instrument: data.equipped_items.instrument || 'instrument_default'
+            });
+          }
+        }
+      });
+      return () => unsub();
+    } catch (err) {
+      console.warn("Avatar snap hook skipped:", err);
+    }
+  }, [authState.userId, userDeviceId, authState.role, authState.isAuthenticated]);
 
   const handleStandardLogin = () => {};
   const handlePopupLoginFallback = () => {};
@@ -362,7 +397,7 @@ export default function App() {
 
     if (authState.role === 'student' && authState.userId) {
       try {
-        await updateStudentProgress(authState.userId, score, xpGained, score > 0);
+        await updateSchoolStudentProgress(authState.userId, score, xpGained, score > 0);
       } catch (err) {
         console.warn("School student progress update bypassed / failed:", err);
       }
@@ -453,12 +488,14 @@ export default function App() {
   const navItems = [
     { id: 'home', label: 'Welcome Home', icon: Home },
     { id: 'dashboard', label: 'My Progress Stats', icon: Award },
+    { id: 'shop', label: '🔥 Rock Shop', icon: ShoppingBag },
     { id: 'hub', label: 'Learning Hub', icon: BookOpen },
     { id: 'quiz', label: 'Play Arena', icon: Trophy },
     { id: 'badges', label: 'Badges & Quests', icon: Star },
     { id: 'rules', label: 'How It Works & Rules', icon: HelpCircle },
     { id: 'terms', label: 'Terms & Policies', icon: FileText },
-    { id: 'developer', label: 'Meet Developer', icon: User }
+    { id: 'developer', label: 'Meet Developer', icon: User },
+    { id: 'creator', label: "Jesse's Desk 👑", icon: ShieldCheck }
   ];
 
   return (
@@ -511,14 +548,21 @@ export default function App() {
             <p className="text-[11px] text-brand-accent font-medium tracking-wide italic mt-3 bg-white/5 py-1 px-2.5 rounded-lg border-l-2 border-brand-accent">
               ★ "We are young genius"
             </p>
-            <div className="mt-3 flex items-center gap-2.5 p-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/15 rounded-xl text-left">
-              <div className="text-xl">🎸</div>
+            <div className="mt-3 flex items-center gap-3.5 p-2.5 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border border-violet-500/15 rounded-xl text-left overflow-hidden">
+              <div className="shrink-0 flex items-center justify-center">
+                <AvatarPreview 
+                  equippedItems={liveEquipped} 
+                  animate={true} 
+                  size="sm" 
+                  showStage={false} 
+                />
+              </div>
               <div className="min-w-0 font-sans">
                 <p className="text-[11px] font-black text-slate-200 truncate">
                   {authState.isAuthenticated ? (authState.username || "Young Genius Scholar") : "Local Guest Player"}
                 </p>
                 <p className="text-[9px] text-brand-accent/90 font-extrabold uppercase tracking-wide truncate">
-                  Star: {configSettings.selectedAvatar}
+                  STARS: LIVE DESIGN
                 </p>
               </div>
             </div>
@@ -843,6 +887,32 @@ export default function App() {
                 exit={{ opacity: 0, y: -15 }}
               >
                 <DeveloperPage currentUser={{ uid: userDeviceId || 'guest', username: authState.username || 'Genius Scholar' }} />
+              </motion.div>
+            )}
+
+            {activeTab === 'creator' && (
+              <motion.div
+                key="creator"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+              >
+                <CreatorPanel />
+              </motion.div>
+            )}
+
+            {activeTab === 'shop' && (
+              <motion.div
+                key="shop"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+              >
+                <RockShop 
+                  userId={authState.userId || userDeviceId || 'guest'} 
+                  role={authState.role || 'individual'}
+                  onNavigateToTab={(tab) => setActiveTab(tab)}
+                />
               </motion.div>
             )}
           </AnimatePresence>

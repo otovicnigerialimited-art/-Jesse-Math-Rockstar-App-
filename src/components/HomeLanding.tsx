@@ -146,7 +146,7 @@ export default function HomeLanding({ username, stats, onNavigateToTab, onNaviga
             Challenge global duelists in real-time online battles, earn math tokens, master multi-grade math lessons, and climb the scoreboard! No third-party sign-ins, pure educational power.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-5 pt-4">
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-5 pt-4">
             <button
               onClick={() => onNavigateToTab('quiz')}
               className="w-full sm:w-auto px-10 py-5 btn-3d-pink text-white rounded-2xl font-black text-base tracking-wider uppercase flex items-center justify-center gap-2 hover:scale-105 transition-transform"
@@ -154,10 +154,16 @@ export default function HomeLanding({ username, stats, onNavigateToTab, onNaviga
               Enter Play Arena <ArrowRight size={18} />
             </button>
             <button
+              onClick={() => onNavigateToTab('shop')}
+              className="w-full sm:w-auto px-8 py-5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 rounded-2xl font-black text-base tracking-wide uppercase flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+            >
+              🎸 Rock Shop & Customize
+            </button>
+            <button
               onClick={() => onNavigateToTab('rules')}
               className="w-full sm:w-auto px-10 py-5 btn-3d-blue text-white rounded-2xl font-black text-base tracking-wide uppercase flex items-center justify-center gap-2 hover:scale-105 transition-transform"
             >
-              <HelpCircle size={17} /> How to Play & Rules
+              <HelpCircle size={17} /> Rules Page
             </button>
           </div>
         </div>

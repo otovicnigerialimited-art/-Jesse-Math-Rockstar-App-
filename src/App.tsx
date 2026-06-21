@@ -1253,11 +1253,14 @@ export default function App() {
                 <span className="text-4xl text-amber-400">🎁</span>
               </div>
               <h2 className="text-2xl font-black text-white">Free Streak Gift!</h2>
-              <p className="text-amber-400 font-black text-lg">
-                Jesse gave you a free streak for using my website
+              <p className="text-amber-400 font-bold text-md italic">
+                This is a thank you for using my website.
               </p>
               <p className="text-sm text-slate-400">
-                You've been gifted an incredible <strong className="text-amber-400">+{showGiftDialog.amount} STREAK BONUS</strong>! Keep rocking those math problems!
+                Jesse says: "Thank you so much for testing out my website! Your support means the world to me. To kickstart your math adventure, I've loaded a free streak reward onto your account! Enjoy the game, practice hard, and become a true math genius."
+              </p>
+              <p className="text-md font-bold text-slate-200 mt-2">
+                You've been gifted an incredible <strong className="text-amber-400">+{showGiftDialog.amount} STREAK BONUS</strong>!
               </p>
               <button
                 onClick={() => setShowGiftDialog(null)}

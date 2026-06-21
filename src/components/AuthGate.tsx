@@ -101,6 +101,7 @@ export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) 
       if (!uid) {
         uid = `dev_${Math.floor(100000 + Math.random() * 900000)}`;
       }
+      localStorage.setItem('jesse_rock_device_id', uid);
 
       const nameDocRef = doc(db, "usernames", cleanUsername.toLowerCase());
       const nameSnap = await getDoc(nameDocRef);
@@ -220,7 +221,7 @@ export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) 
       localStorage.setItem('jesse_rock_user_id', freshStudent.id);
       localStorage.setItem('jesse_rock_my_username', freshStudent.username);
       localStorage.setItem('jesse_rock_real_name', freshStudent.real_first_name);
-      localStorage.setItem('jesse_rock_device_id', freshStudent.id);
+      // localStorage.setItem('jesse_rock_device_id', freshStudent.id); // DO NOT OVERWRITE DEVICE ID
       localStorage.setItem('jesse_rock_teacher_id', freshStudent.teacher_id);
 
       setSuccess(`Verified Rockstar Student @${freshStudent.username}! Preparing your instruments...`);
@@ -273,7 +274,7 @@ export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) 
       localStorage.setItem('jesse_rock_user_id', authenticatedTeacher.id);
       localStorage.setItem('jesse_rock_my_username', authenticatedTeacher.email);
       localStorage.setItem('jesse_rock_real_name', authenticatedTeacher.teacher_name);
-      localStorage.setItem('jesse_rock_device_id', authenticatedTeacher.id);
+      // localStorage.setItem('jesse_rock_device_id', authenticatedTeacher.id);
 
       setSuccess(`Welcome back, Teacher ${authenticatedTeacher.teacher_name}! Synchronising...`);
       setTimeout(() => {

@@ -33,7 +33,7 @@ import RockShop from './components/RockShop';
 import { UserStats, Difficulty, Lesson } from './types';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, increment } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from './lib/firestoreUtils';
 import AuthGate from './components/AuthGate';
 import ArenaMatches from './components/ArenaMatches';
@@ -376,28 +376,27 @@ export default function App() {
     const today = new Date();
     if (today.getMonth() === 5 && today.getDate() === 20) {
       const currentYear = today.getFullYear();
-      const claimedKey = `jesse_anniversary_claimed_${currentYear}`;
+      const claimedField = `anniversary_claimed_${currentYear}`;
       
-      if (!localStorage.getItem(claimedKey)) {
-        setTimeout(() => {
-          setStats(prev => {
-            const newStreak = prev.streak + 100;
-            const newBestStreak = Math.max(prev.bestStreak, newStreak);
-            
-            const uid = authState.userId || userDeviceId;
-            if (uid) {
-               const colName = authState.role === 'student' ? 'school_students' : 'users';
-               try {
-                  setDoc(doc(db, colName, uid), { streak: newStreak, bestStreak: newBestStreak }, { merge: true }).catch(console.warn);
-               } catch (e) {}
-            }
+      // We need the latest user data to check this
+      const uid = authState.userId || userDeviceId;
+      const colName = authState.role === 'student' ? 'school_students' : 'users';
+      const userRef = doc(db, colName, uid);
+      
+      getDoc(userRef).then(snap => {
+        if (snap.exists() && !snap.data()[claimedField]) {
+             const amount = 100;
+             const updateData: any = {
+                streak: increment(amount),
+                bestStreak: increment(amount),
+                coins: increment(amount),
+                jesse_gift: { id: `anniversary_${currentYear}`, amount, type: 'streak' },
+                [claimedField]: true
+             };
 
-            return { ...prev, streak: newStreak, bestStreak: newBestStreak };
-          });
-          localStorage.setItem(claimedKey, "true");
-          setShowAnniversaryDialog(true);
-        }, 1500);
-      }
+             updateDoc(userRef, updateData).catch(console.warn);
+        }
+      });
     }
   }, [authState.isAuthenticated, userDeviceId, authState.role, authState.userId]);
 

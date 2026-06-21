@@ -46,6 +46,8 @@ import AvatarPreview from './components/AvatarPreview';
 import { updateSchoolStudentProgress } from './lib/schoolDb';
 
 
+import jesseRockLogo from './assets/images/jesse_rock_logo_1782041250458.jpg';
+
 const INITIAL_STATS: UserStats = {
   totalSolved: 0,
   correctAnswers: 0,
@@ -58,6 +60,8 @@ const INITIAL_STATS: UserStats = {
 
 export default function App() {
   const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'shop'>('home');
+  const [showGuestFinishDialog, setShowGuestFinishDialog] = useState(false);
+  const [guestScore, setGuestScore] = useState({ score: 0, xp: 0 });
   const [liveEquipped, setLiveEquipped] = useState({
     hair: 'hair_default',
     body: 'body_default',
@@ -100,7 +104,7 @@ export default function App() {
     isCookieBlocked: boolean;
     message: string;
     username: string | null;
-    role?: 'student' | 'teacher' | 'admin' | 'individual';
+    role?: 'student' | 'teacher' | 'admin' | 'individual' | 'guest';
     schoolId?: string | null;
     schoolName?: string | null;
     className?: string | null;
@@ -344,6 +348,12 @@ export default function App() {
   }, [authState.isAuthenticated, userDeviceId, authState.username]);
 
   const handleQuizFinish = async (score: number, total: number, xpGained: number) => {
+    if (authState.role === 'guest') {
+      setGuestScore({ score, xp: xpGained });
+      setShowGuestFinishDialog(true);
+      return;
+    }
+
     const { weekKey } = getWeeklyData();
     let updatedStats: any = null;
 
@@ -471,7 +481,19 @@ export default function App() {
         onAuthSuccess={(uname, matchedUid) => {
           setUserDeviceId(matchedUid);
           fetchAndSyncProfile(uname, matchedUid);
-        }} 
+        }}
+        onGuestPlay={() => {
+          setAuthState({
+            isAuthenticated: true,
+            isChecking: false,
+            isCookieBlocked: false,
+            message: "Guest session started",
+            username: "Rockstar Guest",
+            role: "guest",
+            userId: null
+          });
+          setActiveTab('quiz');
+        }}
       />
     );
   }
@@ -527,8 +549,8 @@ export default function App() {
           <div className="flex flex-col gap-1 mb-10 px-2">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/30">
-                  <Trophy className="text-white" size={22} />
+                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(34,211,238,0.5)] border border-cyan-500/50 shrink-0">
+                  <img src={jesseRockLogo} alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
                 <h1 className="text-2xl font-display font-black tracking-tight leading-tight wiggle-hover cursor-pointer">
                   JESSE ROCK<br />
@@ -628,8 +650,8 @@ export default function App() {
           {/* Mobile Header / Toggle Bar */}
           <div className="lg:hidden flex items-center justify-between p-4 bg-slate-900/90 border border-white/10 rounded-2xl mb-6 backdrop-blur-md sticky top-0 z-30 shadow-lg shadow-black/40">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-md shadow-brand-primary/20 shrink-0">
-                <Trophy className="text-white" size={16} />
+              <div className="w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_10px_rgba(34,211,238,0.5)] shrink-0 border border-cyan-500/50">
+                <img src={jesseRockLogo} alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               </div>
               <span className="text-xs font-display font-black tracking-tight leading-none text-white wiggle-hover cursor-pointer">
                 JESSE ROCK<br />
@@ -1081,6 +1103,48 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+      {/* Guest Play Finish Dialog */}
+      <AnimatePresence>
+        {showGuestFinishDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowGuestFinishDialog(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-slate-900 border-2 border-brand-primary p-8 rounded-3xl shadow-neon z-10 text-center space-y-6"
+            >
+              <div className="w-20 h-20 bg-brand-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trophy size={40} className="text-brand-primary" />
+              </div>
+              <h2 className="text-2xl font-black text-white">Awesome Job!</h2>
+              <p className="text-slate-300 font-medium">
+                You scored <span className="text-brand-primary font-bold">{guestScore.score} points</span>.
+              </p>
+              <p className="text-sm text-slate-400">
+                To save your high scores and unlock the Rock Shop, ask your Teacher to register your official account!
+              </p>
+              <button
+                onClick={() => {
+                  setShowGuestFinishDialog(false);
+                  setAuthState(prev => ({ ...prev, isAuthenticated: false, role: 'individual' }));
+                  setActiveTab('home');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-neon rounded-xl cursor-pointer"
+              >
+                RETURN TO LOGIN
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

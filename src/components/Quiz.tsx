@@ -37,8 +37,7 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
     inputRef.current?.focus();
   }, [currentProblem]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitAnswer = () => {
     if (userInput === '') return;
 
     const isCorrect = userInput.trim().split(' ').join('') === String(currentProblem.answer);
@@ -79,6 +78,27 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
       setActiveFeedbackTag(null);
     }, 1300);
   };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    submitAnswer();
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isGameOver || feedback !== null || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitAnswer();
+      } else if (/^[0-9/.\-]$/.test(e.key) || e.key === 'Backspace') {
+        if (document.activeElement !== inputRef.current) {
+          inputRef.current?.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [userInput, currentProblem, isGameOver, feedback, streak]);
 
   if (isGameOver) {
     const xpGained = calculateXP(true, difficulty) * score;
@@ -167,11 +187,11 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="relative max-w-xs mx-auto">
+        <form onSubmit={handleSubmit} className="relative max-w-xs mx-auto lg:mb-0 mb-6">
           <input
             ref={inputRef}
             type="text"
-            inputMode={currentProblem.type === 'fractions_addition' ? 'text' : 'numeric'}
+            inputMode={currentProblem.type === 'fractions_addition' ? 'text' : 'none'}
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             className="w-full bg-white/5 border-2 border-white/20 rounded-2xl py-6 px-4 text-4xl text-center font-bold focus:border-brand-primary focus:outline-none transition-all placeholder:text-white/10"
@@ -185,6 +205,31 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
             <ArrowRight />
           </button>
         </form>
+
+        {/* Digital Keypad - Optimized for touchscreens but also usable on desktop */}
+        <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'CLEAR', 0, 'GO'].map((key) => (
+            <button
+              key={key}
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault(); // Prevents both loss of focus and mobile keyboard popping up abruptly if we override it
+                if (key === 'CLEAR') setUserInput('');
+                else if (key === 'GO') submitAnswer();
+                else setUserInput((prev) => prev + key);
+                inputRef.current?.focus();
+              }}
+              className={cn(
+                "h-14 min-w-[3.5rem] rounded-2xl text-2xl font-black transition-transform active:scale-95 shadow-md flex items-center justify-center cursor-pointer",
+                key === 'CLEAR' ? "bg-rose-500/20 text-rose-400 text-sm border-2 border-rose-500/30 hover:bg-rose-500/30" : 
+                key === 'GO' ? "bg-emerald-500 text-white text-lg hover:brightness-110 shadow-emerald-500/50" : 
+                "bg-white/10 text-white border-2 border-white/10 hover:bg-white/20"
+              )}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
       <button 

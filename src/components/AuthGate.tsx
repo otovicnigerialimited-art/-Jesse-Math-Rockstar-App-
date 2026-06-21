@@ -12,8 +12,10 @@ import {
   LogIn,
   UserPlus,
   Mail,
+  Zap,
   Contact
 } from 'lucide-react';
+import jesseRockLogo from '../assets/images/jesse_rock_logo_1782041250458.jpg';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { 
@@ -24,9 +26,10 @@ import {
 
 interface AuthGateProps {
   onAuthSuccess: (username: string, uid: string) => void;
+  onGuestPlay?: () => void;
 }
 
-export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
+export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) {
   // Tabs: 'individual' for Home Login, 'student' for Student Login, 'teacher' for Teacher Login
   const [loginTab, setLoginTab] = useState<'individual' | 'student' | 'teacher'>('individual');
   
@@ -365,12 +368,12 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
         <div className="text-center space-y-2.5">
           <motion.div 
             whileHover={{ scale: 1.1, rotate: 12 }}
-            className="w-14 h-14 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-[1.25rem] flex items-center justify-center shadow-lg shadow-violet-500/30 mx-auto cursor-pointer"
+            className="w-16 h-16 rounded-[1.25rem] overflow-hidden shadow-[0_0_20px_rgba(34,211,238,0.6)] border border-cyan-400 mx-auto cursor-pointer"
           >
-            <Trophy className="text-white" size={24} />
+            <img src={jesseRockLogo} alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           </motion.div>
           
-          <h1 className="text-2xl font-display font-black tracking-tight text-white leading-none">
+          <h1 className="text-2xl font-display font-black tracking-tight text-white leading-none mt-2">
             JESSE ROCK<br />
             <span className="bg-gradient-to-r from-yellow-400 via-pink-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(244,63,94,0.4)] text-xl font-black tracking-widest uppercase">
               MATH ARENA 👑
@@ -711,6 +714,21 @@ export default function AuthGate({ onAuthSuccess }: AuthGateProps) {
                 </div>
               </form>
             )}
+          </div>
+        )}
+
+        {/* Universal Guest Play Button */}
+        {onGuestPlay && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={onGuestPlay}
+              disabled={loading}
+              className="w-full py-3 bg-white text-slate-900 border-2 border-indigo-500/30 hover:bg-slate-100 font-extrabold uppercase tracking-widest transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_15px_rgba(255,255,255,0.2)] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Zap size={14} className="text-amber-500" />
+              QUICK PLAY AS GUEST ⚡
+            </button>
           </div>
         )}
 

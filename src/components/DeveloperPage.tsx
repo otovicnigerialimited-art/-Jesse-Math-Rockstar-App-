@@ -82,8 +82,8 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
   const timelineSteps = [
     {
       age: "Age 8",
-      title: "First Lines & Scratch Coding",
-      desc: "Discovered programming logic through Scratch blocks. Built interactive logic layouts, dynamic 2D games, and knew immediately that software craftsmanship was my future!"
+      title: "First Lines & Visual Block Coding",
+      desc: "Discovered programming logic through visual block-based layouts. Built interactive logic layouts, dynamic 2D games, and knew immediately that software craftsmanship was my future!"
     },
     {
       age: "Age 9",
@@ -113,7 +113,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
           About the <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Developer</span>
         </h1>
         <p className="text-slate-400 text-sm leading-relaxed">
-          Unlock the story of 11-year-old software architect Jesse Otobo. From initial Scratch blocks at age 8 to launching comprehensive full-scale React platforms.
+          Unlock the story of 11-year-old software architect Jesse Otobo. From initial visual block layouts at age 8 to launching comprehensive full-scale React platforms.
         </p>
       </div>
 
@@ -203,10 +203,10 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
           <p>Hello! I am <strong>Jesse</strong>, the founder and creator of <strong>Jesse Rock Math</strong>. This is my very first application published to the world to help kids everywhere fall in love with practicing maths.</p>
           
           <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🎸 The Inspiration & Style</h3>
-          <p>My entire journey for this specific application was deeply inspired by the game <em>Times Tables Rock Stars (TT Rockstars)</em>. I wanted to build my own unique platform to help my peers sharpen their skills. You might also notice that the app layout features my favorite colors: <strong>Red and Blue</strong>!</p>
+          <p>My entire journey for this specific application was deeply inspired by classic rock-themed multiplication games. I wanted to build my own unique platform to help my peers sharpen their skills. You might also notice that the app layout features my favorite colors: <strong>Red and Blue</strong>!</p>
 
-          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🚀 The Evolution: From Scratch to Vibe Coding</h3>
-          <p>My coding adventure started when I was just 8 years old using Scratch. As the years grew, I completely self-explored and mastered <strong>vibe coding</strong>, which I believe is the next generation of software engineering. I am incredibly dedicated to my craft—I open my code editor up to <strong>5 times every single day</strong>, building up to <strong>3 or 4 applications a day</strong>! Before launching Jesse Rock Math, I had already built and experimented with over 50 applications.</p>
+          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🚀 The Evolution: From Blocks to Vibe Coding</h3>
+          <p>My coding adventure started when I was just 8 years old using visual block programming. As the years grew, I completely self-explored and mastered <strong>vibe coding</strong>, which I believe is the next generation of software engineering. I am incredibly dedicated to my craft—I open my code editor up to <strong>5 times every single day</strong>, building up to <strong>3 or 4 applications a day</strong>! Before launching Jesse Rock Math, I had already built and experimented with over 50 applications.</p>
 
           <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🛠️ My Hardest Bug Fixed</h3>
           <p>Being a developer isn't always easy. My absolute hardest bug happened right when I started vibe coding: <strong>handling and connecting the API logic correctly</strong>. It took a lot of independent problem-solving and exploring, but I didn't give up until the data connected perfectly!</p>

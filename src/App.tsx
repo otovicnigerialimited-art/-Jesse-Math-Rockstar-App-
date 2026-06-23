@@ -1048,7 +1048,7 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="text-xl font-display font-black tracking-tight text-white leading-none">ROCK CONFIGS</h3>
-                    <p className="text-[10px] text-brand-accent tracking-wider font-extrabold uppercase bg-white/5 px-2 py-0.5 rounded mt-1.5 inline-block">TT Rockstars Tweak Config</p>
+                    <p className="text-[10px] text-brand-accent tracking-wider font-extrabold uppercase bg-white/5 px-2 py-0.5 rounded mt-1.5 inline-block">Math Rockstar Tweak Config</p>
                   </div>
                 </div>
                 <button 
@@ -1112,7 +1112,7 @@ export default function App() {
                     {[
                       { name: '🎸 Math Rockstar', emoji: '🎸' },
                       { name: '👑 Young Genius', emoji: '👑' },
-                      { name: '⚡ Scratch Ninja', emoji: '⚡' },
+                      { name: '⚡ Code Ninja', emoji: '⚡' },
                       { name: '🔥 Table Titan', emoji: '🔥' },
                       { name: '🔮 Science Wiz', emoji: '🔮' },
                       { name: '🚀 Orbit Cadet', emoji: '🚀' }

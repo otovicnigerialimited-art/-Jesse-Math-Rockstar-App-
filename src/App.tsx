@@ -23,9 +23,11 @@ import {
   Globe,
   User,
   Heart,
-  ShoppingBag
+  ShoppingBag,
+  Flame
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
+import Leaderboard from './components/Leaderboard';
 import Quiz from './components/Quiz';
 import LearningHub from './components/LearningHub';
 import BadgesSection, { getWeeklyData } from './components/BadgesSection';
@@ -62,11 +64,13 @@ const INITIAL_STATS: UserStats = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'family' | 'learn' | 'shop'>('home');
+  const [activeTab, setActiveTab ] = useState<'home' | 'dashboard' | 'leaderboard' | 'hub' | 'quiz' | 'badges' | 'rules' | 'terms' | 'seo' | 'developer' | 'family' | 'learn' | 'shop' | 'creator'>('home');
+  const [rewardTimer, setRewardTimer] = useState(300);
+  const [isWorkspaceLocked, setIsWorkspaceLocked] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [showGuestFinishDialog, setShowGuestFinishDialog] = useState(false);
   const [showAnniversaryDialog, setShowAnniversaryDialog] = useState(false);
-  const [showGiftDialog, setShowGiftDialog] = useState<{amount: number} | null>(null);
+  const [showGiftDialog, setShowGiftDialog] = useState<{amount: number, isWeeklyWinner?: boolean} | null>(null);
   const [guestScore, setGuestScore] = useState({ score: 0, xp: 0 });
   const [liveEquipped, setLiveEquipped] = useState({
     hair: 'hair_default',
@@ -296,11 +300,16 @@ export default function App() {
             const currentGiftId = data.jesse_gift.id;
             const lastSeenGift = localStorage.getItem('jesse_last_seen_gift');
             if (currentGiftId !== lastSeenGift) {
-               setShowGiftDialog({ amount: data.jesse_gift.amount });
+               setShowGiftDialog({ 
+                 amount: data.jesse_gift.amount, 
+                 isWeeklyWinner: currentGiftId.startsWith('weekly_winner_')
+               });
                localStorage.setItem('jesse_last_seen_gift', currentGiftId);
             }
           }
         }
+      }, (error) => {
+        console.warn("Error in real-time progress subscription:", error);
       });
       return () => unsub();
     } catch (err) {
@@ -389,16 +398,106 @@ export default function App() {
              const updateData: any = {
                 streak: increment(amount),
                 bestStreak: increment(amount),
+                streakScore: increment(amount),
                 coins: increment(amount),
                 jesse_gift: { id: `anniversary_${currentYear}`, amount, type: 'streak' },
                 [claimedField]: true
              };
 
              updateDoc(userRef, updateData).catch(console.warn);
-        }
+         }
       });
     }
   }, [authState.isAuthenticated, userDeviceId, authState.role, authState.userId]);
+
+  // MODULE 2 & 3: Active User Engine & 5-Minute Reward Loop
+  useEffect(() => {
+    if (!authState.isAuthenticated || !userDeviceId) return;
+
+    let timerInterval: NodeJS.Timeout;
+    const lastActiveRef = { current: Date.now() };
+
+    // Reset inactivity timer on user activity
+    const handleActivity = () => {
+      lastActiveRef.current = Date.now();
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+
+    timerInterval = setInterval(() => {
+      // Pause if tab is hidden / minimized
+      if (document.visibilityState !== 'visible') return;
+
+      // Pause if idle for more than 30 seconds
+      if (Date.now() - lastActiveRef.current > 30000) return;
+
+      setRewardTimer((prev) => {
+        if (prev <= 1) {
+          // Trigger automated celebration sequence!
+          triggerJackpotReward();
+          return 300; // Reset countdown
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(timerInterval);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+    };
+  }, [authState.isAuthenticated, userDeviceId]);
+
+  const triggerJackpotReward = async () => {
+    if (!userDeviceId) return;
+
+    // 1. Lock workspace for 2 seconds (flash a high-impact state)
+    setIsWorkspaceLocked(true);
+    setTimeout(() => {
+      setIsWorkspaceLocked(false);
+    }, 2000);
+
+    // 2. Local update
+    setStats((prev) => {
+      const newStreak = prev.streak + 100;
+      const best = Math.max(prev.bestStreak, newStreak);
+      return {
+        ...prev,
+        streak: newStreak,
+        bestStreak: best
+      };
+    });
+
+    // 3. Database write
+    try {
+      const userRef = doc(db, "users", userDeviceId);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        const userData = snap.data();
+        const nextStreak = (userData.streak ?? 0) + 100;
+        const nextBest = Math.max(userData.bestStreak ?? 0, nextStreak);
+        await setDoc(userRef, {
+          streak: nextStreak,
+          bestStreak: nextBest,
+          streakScore: nextBest, // Update the sorting attribute streakScore
+          coins: (userData.coins ?? 0) + 100,
+          jesse_gift: { id: `jackpot_${Date.now()}`, amount: 100, type: 'streak' }
+        }, { merge: true });
+      }
+    } catch (err) {
+      console.warn("Could not sync jackpot bonus to firestore:", err);
+    }
+
+    // 4. Trigger celebration modal displaying Jesse's official quote
+    setShowGiftDialog({ amount: 100 });
+  };
 
   const handleQuizFinish = async (score: number, total: number, xpGained: number) => {
     if (authState.role === 'guest') {
@@ -442,13 +541,15 @@ export default function App() {
 
     if (userDeviceId) {
       try {
+        const finalBest = Math.max(stats.bestStreak, updatedStats?.streak || 0);
         await setDoc(doc(db, "users", userDeviceId), {
           totalSolved: updatedStats?.totalSolved ?? (stats.totalSolved + total),
           correctAnswers: updatedStats?.correctAnswers ?? (stats.correctAnswers + score),
           xp: updatedStats?.xp ?? (stats.xp + xpGained),
           level: updatedStats?.level ?? (Math.floor((stats.xp + xpGained) / 1000) + 1),
           streak: updatedStats?.streak ?? (score > 0 ? stats.streak + 1 : 0),
-          bestStreak: Math.max(stats.bestStreak, updatedStats?.streak || 0),
+          bestStreak: finalBest,
+          streakScore: finalBest,
           badges: updatedStats?.unlockedBadges ?? (stats.unlockedBadges || []),
           weeklyProgress: updatedStats?.weeklyProgress ?? null,
           history: updatedStats?.history ?? (stats.history || [])
@@ -563,6 +664,7 @@ export default function App() {
   const navItems = [
     { id: 'home', label: 'Welcome Home', icon: Home },
     { id: 'dashboard', label: 'My Progress Stats', icon: Award },
+    { id: 'leaderboard', label: '🏆 Global Leaderboard', icon: Trophy },
     { id: 'shop', label: '🔥 Rock Shop', icon: ShoppingBag },
     { id: 'hub', label: 'Learning Hub', icon: BookOpen },
     { id: 'quiz', label: 'Play Arena', icon: Trophy },
@@ -643,6 +745,30 @@ export default function App() {
                 </p>
               </div>
             </div>
+
+            {/* MODULE 2: Visible Dopamine Reward Countdown Box */}
+            {authState.isAuthenticated && authState.role !== 'guest' && (
+              <div className="mt-3 p-3 bg-gradient-to-br from-brand-primary/15 via-slate-900/40 to-brand-secondary/15 border border-brand-primary/20 rounded-xl space-y-2 relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-brand-primary/10 rounded-full blur-xl group-hover:bg-brand-primary/20 transition-all duration-300" />
+                <div className="flex items-center justify-between relative z-10">
+                  <span className="text-[10px] text-orange-400 uppercase font-extrabold tracking-wider flex items-center gap-1">
+                    <Flame size={12} className="fill-orange-400 animate-pulse text-orange-400" /> Active Reward
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-300 font-black">
+                    {Math.floor(rewardTimer / 60)}:{(rewardTimer % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative z-10">
+                  <div 
+                    className="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-1000"
+                    style={{ width: `${(rewardTimer / 300) * 100}%` }}
+                  />
+                </div>
+                <p className="text-[9.5px] text-slate-300 font-medium leading-tight relative z-10">
+                  Stay active to score a massive <strong className="text-orange-400 font-extrabold">+100 STREAK BONUS</strong>!
+                </p>
+              </div>
+            )}
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
@@ -860,6 +986,24 @@ export default function App() {
                 <Dashboard 
                   stats={stats} 
                   onStartQuiz={() => setActiveTab('quiz')} 
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'leaderboard' && (
+              <motion.div
+                key="leaderboard"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <Leaderboard 
+                  currentUser={{
+                    uid: authState.userId || userDeviceId || 'guest',
+                    username: authState.username,
+                    role: authState.role
+                  }}
+                  currentStreak={stats.streak}
                 />
               </motion.div>
             )}
@@ -1263,6 +1407,23 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
+        {isWorkspaceLocked && (
+          <div className="fixed inset-0 bg-slate-950/90 z-[100] flex flex-col items-center justify-center p-6 text-center select-none cursor-not-allowed">
+            <div className="relative mb-6">
+              <div className="w-24 h-24 bg-brand-primary/10 border-2 border-dashed border-brand-primary/40 rounded-full animate-spin" />
+              <Flame size={48} className="absolute inset-0 m-auto text-orange-500 fill-orange-500 animate-pulse" />
+            </div>
+            <h1 className="text-3xl md:text-5xl font-display font-black text-white uppercase tracking-widest">
+              ⚡ JACKPOT SYNCHRONISATION ⚡
+            </h1>
+            <p className="text-brand-accent text-xs sm:text-sm font-bold uppercase tracking-widest mt-2 animate-pulse">
+              Securing your +100 Streak Reward on production database...
+            </p>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showGiftDialog && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div
@@ -1279,14 +1440,19 @@ export default function App() {
               className="relative w-full max-w-sm bg-slate-900 border-2 border-amber-500 p-8 rounded-3xl shadow-[0_0_30px_rgba(245,158,11,0.3)] z-10 text-center space-y-6"
             >
               <div className="w-20 h-20 bg-amber-500/20 border border-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl text-amber-400">🎁</span>
+                <span className="text-4xl text-amber-400">{showGiftDialog.isWeeklyWinner ? "👑" : "🎁"}</span>
               </div>
-              <h2 className="text-2xl font-black text-white">Free Streak Gift!</h2>
+              <h2 className="text-2xl font-black text-white">
+                {showGiftDialog.isWeeklyWinner ? "Weekly Champion!" : "Free Streak Gift!"}
+              </h2>
               <p className="text-amber-400 font-bold text-md italic">
-                This is a thank you for using my website.
+                {showGiftDialog.isWeeklyWinner ? "Leaderboard Victory Reward" : "This is a thank you for using my website."}
               </p>
               <p className="text-sm text-slate-400">
-                Jesse says: "Thank you so much for testing out my website! Your support means the world to me. To kickstart your math adventure, I've loaded a free streak reward onto your account! Enjoy the game, practice hard, and become a true math genius."
+                {showGiftDialog.isWeeklyWinner 
+                  ? 'Congratulations on securing the #1 Spot on the Global Arena Leaderboard! You are the absolute champion scholar of the week. Jesse says: "Incredible dedication and math mastery! You earned this mighty champion prize. Keep rockin\' those equations!"'
+                  : 'Jesse says: "Thank you so much for testing out my website! Your support means the world to me. To kickstart your math adventure, I\'ve loaded a free streak reward onto your account! Enjoy the game, practice hard, and become a true math genius."'
+                }
               </p>
               <p className="text-md font-bold text-slate-200 mt-2">
                 You've been gifted an incredible <strong className="text-amber-400">+{showGiftDialog.amount} STREAK BONUS</strong>!
@@ -1295,7 +1461,7 @@ export default function App() {
                 onClick={() => setShowGiftDialog(null)}
                 className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-amber-500/30 rounded-xl cursor-pointer"
               >
-                AWESOME!
+                {showGiftDialog.isWeeklyWinner ? "HAIL THE CHAMPION!" : "AWESOME!"}
               </button>
             </motion.div>
           </div>

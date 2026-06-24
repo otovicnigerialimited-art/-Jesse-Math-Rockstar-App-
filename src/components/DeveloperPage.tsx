@@ -200,23 +200,20 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
         </div>
 
         <div style={{ lineHeight: "1.8", fontSize: "1.1rem", color: "#e0e0e0" }} className="space-y-4">
-          <p>Hello! I am <strong>Jesse</strong>, the founder and creator of <strong>Jesse Rock Math</strong>. This is my very first application published to the world to help kids everywhere fall in love with practicing maths.</p>
+          <p>Hello! I am Jesse, the founder of Jesse Rock Math, an application designed to help children enjoy practicing mathematics.</p>
           
-          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🎸 The Inspiration & Style</h3>
-          <p>My entire journey for this specific application was deeply inspired by classic rock-themed multiplication games. I wanted to build my own unique platform to help my peers sharpen their skills. You might also notice that the app layout features my favorite colors: <strong>Red and Blue</strong>!</p>
+          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🎸 The Inspiration</h3>
+          <p>Inspired to make education engaging, I created a unique platform to help peers improve their skills.</p>
 
-          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🚀 The Evolution: From Blocks to Vibe Coding</h3>
-          <p>My coding adventure started when I was just 8 years old using visual block programming. As the years grew, I completely self-explored and mastered <strong>vibe coding</strong>, which I believe is the next generation of software engineering. I am incredibly dedicated to my craft—I open my code editor up to <strong>5 times every single day</strong>, building up to <strong>3 or 4 applications a day</strong>! Before launching Jesse Rock Math, I had already built and experimented with over 50 applications.</p>
+          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🚀 The Evolution: From Blocks to Advanced Coding</h3>
+          <p>I started coding at age 8, using visual, block-based tools to learn programming logic. Over time, I transitioned to advanced technologies through self-directed learning and experimentation.</p>
 
-          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🛠️ My Hardest Bug Fixed</h3>
-          <p>Being a developer isn't always easy. My absolute hardest bug happened right when I started vibe coding: <strong>handling and connecting the API logic correctly</strong>. It took a lot of independent problem-solving and exploring, but I didn't give up until the data connected perfectly!</p>
-
-          <h3 style={{ color: "#00d2ff", marginTop: "25px", borderBottom: "2px solid #ff0055", paddingBottom: "5px" }}>🛠️ Powered By</h3>
-          <p>This application was engineered using world-class professional developer tools. Special credit and thanks to my family:</p>
+          <h3 style={{ color: "#00d2ff", marginTop: "25px", borderBottom: "2px solid #ff0055", paddingBottom: "5px" }}>🛠️ The Developer Tech Stack</h3>
+          <p>After creating and testing over 50 applications, I mastered API handling, backend management, and AI prompting. For this project, I utilize:</p>
           <ul style={{ listStyleType: "disc", marginLeft: "20px", color: "#fff" }} className="pl-4 space-y-1">
-            <li><strong>My Dad:</strong> For his invaluable technical help and constant motivation.</li>
-            <li><strong>My Siblings:</strong> For their endless support and helpful play-testing.</li>
-            <li><strong>My Family:</strong> For providing the environment that allowed me to code and create!</li>
+            <li><strong>AI Core:</strong> Advanced artificial intelligence models.</li>
+            <li><strong>Version Control:</strong> Secure, cloud-based repositories.</li>
+            <li><strong>Cloud Deployment:</strong> High-performance, edge-network hosting.</li>
           </ul>
 
           <div style={{ color: "#00d2ff", marginTop: "30px", background: "rgba(255, 0, 85, 0.1)", padding: "15px", borderRadius: "8px", borderLeft: "4px solid #ff0055" }}>

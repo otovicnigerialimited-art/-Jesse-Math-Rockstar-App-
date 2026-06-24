@@ -20,19 +20,23 @@ const operators = {
   fractions_addition: '+'
 };
 
-export function generateProblem(difficulty: Difficulty): Problem {
+export function generateProblem(difficulty: Difficulty, allowedTypes?: Problem['type'][]): Problem {
   const id = Math.random().toString(36).substring(2, 9);
   let num1: number, num2: number, type: Problem['type'];
 
   const types: Problem['type'][] = ['addition', 'subtraction', 'multiplication', 'division', 'long_division', 'fractions_addition'];
   
-  // Weighted selection based on difficulty
-  if (difficulty === 'easy') {
-    type = Math.random() > 0.5 ? 'addition' : 'subtraction';
-  } else if (difficulty === 'medium') {
-    type = (['addition', 'subtraction', 'multiplication', 'division'] as const)[Math.floor(Math.random() * 4)];
+  if (allowedTypes && allowedTypes.length > 0) {
+    type = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
   } else {
-    type = types[Math.floor(Math.random() * types.length)];
+    // Weighted selection based on difficulty
+    if (difficulty === 'easy') {
+      type = Math.random() > 0.5 ? 'addition' : 'subtraction';
+    } else if (difficulty === 'medium') {
+      type = (['addition', 'subtraction', 'multiplication', 'division'] as const)[Math.floor(Math.random() * 4)];
+    } else {
+      type = types[Math.floor(Math.random() * types.length)];
+    }
   }
 
   let question = '';

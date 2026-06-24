@@ -6,7 +6,8 @@
       "type": "object",
       "properties": {
         "username": { "type": "string" },
-        "createdAt": { "type": "number" }
+        "createdAt": { "type": "number" },
+        "streakScore": { "type": "number" }
       },
       "required": ["username"]
     },

@@ -407,11 +407,15 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
         if (userSnap && userSnap.exists()) {
           const stats = userSnap.data();
           const curStreak = stats.streak || 0;
+          const nextStreakVal = curStreak + 20;
+          const nextBestVal = Math.max(stats.bestStreak || 0, nextStreakVal);
           try {
             await updateDoc(userRef, {
-              streak: curStreak + 20,
+              streak: nextStreakVal,
+              bestStreak: nextBestVal,
+              streakScore: nextBestVal,
               xp: (stats.xp || 0) + 200, // custom XP reward
-              coins: curStreak + 20 // Math balance (coins) is now the same as streak
+              coins: nextStreakVal // Math balance (coins) is now the same as streak
             });
           } catch (err) {
             handleFirestoreError(err, OperationType.UPDATE, `users/${currentUser.uid}`);

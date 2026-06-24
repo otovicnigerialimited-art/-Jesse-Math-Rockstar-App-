@@ -49,6 +49,7 @@ import SchoolDashboards from './components/SchoolDashboards';
 import CreatorPanel from './components/CreatorPanel';
 import AvatarPreview from './components/AvatarPreview';
 import { updateSchoolStudentProgress } from './lib/schoolDb';
+import ConvertAccountModal from './components/ConvertAccountModal';
 
 
 import jesseRockLogo from './assets/images/jesse_rock_logo_1782041250458.jpg';
@@ -69,6 +70,7 @@ export default function App() {
   const [isWorkspaceLocked, setIsWorkspaceLocked] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [showGuestFinishDialog, setShowGuestFinishDialog] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
   const [showAnniversaryDialog, setShowAnniversaryDialog] = useState(false);
   const [showGiftDialog, setShowGiftDialog] = useState<{amount: number, isWeeklyWinner?: boolean} | null>(null);
   const [guestScore, setGuestScore] = useState({ score: 0, xp: 0 });
@@ -345,8 +347,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    localStorage.setItem('math_rockstar_stats', JSON.stringify(stats));
-  }, [stats]);
+    if (authState.role === 'guest') {
+      localStorage.setItem('guest_rockstar_stats', JSON.stringify(stats));
+    } else {
+      localStorage.setItem('math_rockstar_stats', JSON.stringify(stats));
+    }
+  }, [stats, authState.role]);
 
   // Real-time online heartbeat hook for live player scanning
   useEffect(() => {
@@ -500,12 +506,6 @@ export default function App() {
   };
 
   const handleQuizFinish = async (score: number, total: number, xpGained: number) => {
-    if (authState.role === 'guest') {
-      setGuestScore({ score, xp: xpGained });
-      setShowGuestFinishDialog(true);
-      return;
-    }
-
     const { weekKey } = getWeeklyData();
     let updatedStats: any = null;
 
@@ -538,6 +538,12 @@ export default function App() {
       updatedStats = next;
       return next;
     });
+
+    if (authState.role === 'guest') {
+      setGuestScore({ score, xp: xpGained });
+      setShowGuestFinishDialog(true);
+      return;
+    }
 
     if (userDeviceId) {
       try {
@@ -637,6 +643,12 @@ export default function App() {
           fetchAndSyncProfile(uname, matchedUid);
         }}
         onGuestPlay={() => {
+          const savedGuest = localStorage.getItem('guest_rockstar_stats');
+          if (savedGuest) {
+            setStats(JSON.parse(savedGuest));
+          } else {
+            setStats(INITIAL_STATS);
+          }
           setAuthState({
             isAuthenticated: true,
             isChecking: false,
@@ -807,6 +819,14 @@ export default function App() {
               <p className="text-[10px] text-slate-400 leading-normal font-medium">
                 Signed in as: <strong className="text-white">{authState.username}</strong>
               </p>
+              {authState.role === 'guest' && (
+                <button 
+                  onClick={() => setShowConvertModal(true)}
+                  className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-450 text-slate-950 font-black rounded-xl text-[10px] font-black uppercase tracking-wider transition-all text-center cursor-pointer flex items-center justify-center gap-1 shadow-md shadow-orange-500/10 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  💎 SAVE & CLAIM ACCOUNT
+                </button>
+              )}
               <button 
                 onClick={handleSignOut}
                 className="w-full py-2 bg-gradient-to-r from-rose-600/20 to-red-600/20 hover:from-rose-600/30 hover:to-red-600/30 text-rose-450 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
@@ -986,6 +1006,8 @@ export default function App() {
                 <Dashboard 
                   stats={stats} 
                   onStartQuiz={() => setActiveTab('quiz')} 
+                  isGuest={authState.role === 'guest'}
+                  onConvertProgress={() => setShowConvertModal(true)}
                 />
               </motion.div>
             )}
@@ -1046,6 +1068,8 @@ export default function App() {
                     </div>
                     <Quiz 
                       difficulty={selectedDifficulty} 
+                      isGuest={authState.role === 'guest'}
+                      onConvertProgress={() => setShowConvertModal(true)}
                       onFinish={(score, total, xpGained) => {
                         handleQuizFinish(score, total, xpGained);
                         setPracticeLesson(null);
@@ -1341,30 +1365,72 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-sm bg-slate-900 border-2 border-brand-primary p-8 rounded-3xl shadow-neon z-10 text-center space-y-6"
+              className="relative w-full max-w-sm bg-gradient-to-b from-slate-900 to-indigo-950/90 border-2 border-brand-primary p-8 rounded-3xl shadow-[0_0_30px_rgba(139,92,246,0.3)] z-10 text-center space-y-6"
             >
               <div className="w-20 h-20 bg-brand-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trophy size={40} className="text-brand-primary" />
+                <Trophy size={40} className="text-brand-primary animate-bounce" />
               </div>
-              <h2 className="text-2xl font-black text-white">Awesome Job!</h2>
-              <p className="text-slate-300 font-medium">
-                You scored <span className="text-brand-primary font-bold">{guestScore.score} points</span>.
+              <h2 className="text-2xl font-black text-white uppercase tracking-tight">Awesome Job!</h2>
+              <p className="text-slate-300 font-medium text-sm">
+                You scored <span className="text-brand-primary font-bold">{guestScore.score} points</span> and earned <span className="text-violet-400 font-bold">{guestScore.xp} XP</span> during this session!
               </p>
-              <p className="text-sm text-slate-400">
-                To save your high scores and unlock the Rock Shop, ask your Teacher to register your official account!
+              <p className="text-xs text-slate-400 leading-relaxed font-semibold">
+                To save your high scores permanently, build your customizable avatar, and claim your official rank on the Global Leaderboard, sign up for a free account!
               </p>
-              <button
-                onClick={() => {
-                  setShowGuestFinishDialog(false);
-                  setAuthState(prev => ({ ...prev, isAuthenticated: false, role: 'individual' }));
-                  setActiveTab('home');
-                }}
-                className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-black uppercase tracking-wider transform hover:scale-105 active:scale-95 transition-all duration-200 shadow-neon rounded-xl cursor-pointer"
-              >
-                RETURN TO LOGIN
-              </button>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  onClick={() => {
+                    setShowGuestFinishDialog(false);
+                    setShowConvertModal(true);
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-450 hover:to-amber-450 text-slate-950 font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer transform hover:scale-[1.02] shadow-md shadow-orange-500/25 text-xs"
+                >
+                  💎 CLAIM FREE ACCOUNT NOW
+                </button>
+                <button
+                  onClick={() => {
+                    setShowGuestFinishDialog(false);
+                    setAuthState(prev => ({ ...prev, isAuthenticated: false, role: 'individual' }));
+                    setActiveTab('home');
+                  }}
+                  className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer text-[10px]"
+                >
+                  🔑 SWITCH ACCOUNT / LOG IN
+                </button>
+                <button
+                  onClick={() => setShowGuestFinishDialog(false)}
+                  className="w-full py-2 text-slate-500 hover:text-slate-300 text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Keep Exploring as Guest
+                </button>
+              </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Convert Guest Progress Modal */}
+      <AnimatePresence>
+        {showConvertModal && (
+          <ConvertAccountModal
+            isOpen={showConvertModal}
+            onClose={() => setShowConvertModal(false)}
+            guestStats={stats}
+            userDeviceId={userDeviceId}
+            onConvertSuccess={(username, uid) => {
+              setUserDeviceId(uid);
+              setAuthState({
+                isAuthenticated: true,
+                isChecking: false,
+                isCookieBlocked: false,
+                message: "Account claimed successfully! Welcome, math rockstar!",
+                username: username,
+                role: 'individual',
+                userId: uid
+              });
+              setActiveTab('dashboard');
+            }}
+          />
         )}
       </AnimatePresence>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Crown, Flame, Award, Shield, User, Star, Search, ArrowUp, Clock, Gift } from 'lucide-react';
+import { Trophy, Crown, Flame, Award, Shield, User, Star, Search, ArrowUp, Clock, Gift, Share2, Check } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { 
   collection, 
@@ -81,6 +81,44 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
     lastWeekWinnerStreak?: number;
   } | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+
+  const handleShareRank = () => {
+    const rankText = userRank ? `${userRank}` : "Unranked";
+    const shareText = `🎯 I am currently ranked #${rankText} globally on Jesse Rock Math with a streak of ${userScore}! Can you beat my high score? Play here: https://jesse-math-rockstar-app.vercel.app/`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareText).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }).catch(() => {
+        fallbackCopyText(shareText);
+      });
+    } else {
+      fallbackCopyText(shareText);
+    }
+  };
+
+  const fallbackCopyText = (text: string) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.position = "fixed";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch (err) {
+      console.error("Fallback copy failed", err);
+    }
+  };
 
   const checkAndRunWeeklyReset = async () => {
     try {
@@ -752,43 +790,86 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
           <motion.div
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="fixed bottom-0 left-0 w-full bg-slate-950/95 border-t border-brand-accent/20 backdrop-blur-md shadow-2xl z-50 p-4 px-6 md:px-12 flex items-center justify-between"
+            className="fixed bottom-0 left-0 w-full bg-slate-950/95 border-t border-brand-accent/20 backdrop-blur-md shadow-2xl z-50 p-3 sm:p-4 px-4 sm:px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6"
           >
-            <div className="flex items-center gap-4 max-w-lg">
-              {/* Animated Live Badge */}
-              <div className="relative">
-                <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-green-500"></span>
-                </span>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-red-600 to-blue-600 flex items-center justify-center font-black text-lg text-white border-2 border-white/10 shadow-lg shadow-brand-primary/20">
-                  {userRank ? `#${userRank}` : '--'}
+            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+              <div className="flex items-center gap-4">
+                {/* Animated Live Badge */}
+                <div className="relative">
+                  <span className="absolute top-0 right-0 flex h-3 w-3 sm:h-3.5 sm:w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 sm:h-3.5 w-3 sm:w-3.5 bg-green-500"></span>
+                  </span>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-r from-red-600 to-blue-600 flex items-center justify-center font-black text-sm sm:text-lg text-white border-2 border-white/10 shadow-lg shadow-brand-primary/20">
+                    {userRank ? `#${userRank}` : '--'}
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-[9px] sm:text-[10px] text-brand-accent uppercase font-black tracking-wider block">Live Student Status</span>
+                  <p className="font-display font-black text-sm sm:text-lg text-white leading-none mt-1">
+                    {currentUser.username}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5 sm:mt-1">
+                    Active in arena matching pool
+                  </p>
                 </div>
               </div>
-              
-              <div>
-                <span className="text-[10px] text-brand-accent uppercase font-black tracking-wider block">Live Student Status</span>
-                <p className="font-display font-black text-md sm:text-lg text-white leading-none mt-1">
-                  {currentUser.username}
-                </p>
-                <p className="text-xs text-slate-400 font-medium mt-1">
-                  Active in arena matching pool
-                </p>
+
+              {/* Mobile Streak score shown on the right of name block on mobile */}
+              <div className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 rounded-xl">
+                <Flame size={15} className="text-orange-400 animate-pulse fill-orange-500" />
+                <span className="font-display font-black text-xs text-orange-400">{userScore}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t border-white/5 pt-2 sm:pt-0 sm:border-none">
               <div className="text-right sm:block hidden">
                 <span className="text-[10px] text-slate-500 uppercase font-black tracking-wider block">Math Balance</span>
                 <p className="text-xs text-slate-300 font-bold mt-1">
                   Streak and coin values sync'd
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 rounded-2xl">
+
+              {/* Desktop Streak count */}
+              <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 rounded-2xl">
                 <Flame size={18} className="text-orange-400 animate-pulse fill-orange-500" />
                 <span className="font-display font-black text-md sm:text-xl text-orange-400">{userScore}</span>
               </div>
+
+              {/* Share My Rank Button */}
+              <button
+                onClick={handleShareRank}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 sm:py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-black uppercase tracking-wider rounded-xl shadow-lg transition-all duration-200 cursor-pointer active:scale-95"
+              >
+                {copied ? (
+                  <>
+                    <Check size={14} className="text-emerald-300 animate-bounce" />
+                    <span className="text-emerald-300">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={14} />
+                    <span>Share My Rank</span>
+                  </>
+                )}
+              </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Copy Alert */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -15, scale: 0.95 }}
+            className="fixed bottom-28 sm:bottom-24 right-6 bg-emerald-500 text-slate-950 font-black text-xs uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] border border-emerald-400/20 z-[100] flex items-center gap-2"
+          >
+            <Check size={14} className="stroke-[3px]" />
+            <span>Copied to clipboard!</span>
           </motion.div>
         )}
       </AnimatePresence>

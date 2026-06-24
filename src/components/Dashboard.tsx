@@ -15,15 +15,39 @@ import { cn } from '../lib/utils';
 interface DashboardProps {
   stats: UserStats;
   onStartQuiz: () => void;
+  isGuest?: boolean;
+  onConvertProgress?: () => void;
 }
 
-export default function Dashboard({ stats, onStartQuiz }: DashboardProps) {
+export default function Dashboard({ stats, onStartQuiz, isGuest, onConvertProgress }: DashboardProps) {
   const accuracy = stats.totalSolved > 0 
     ? Math.round((stats.correctAnswers / stats.totalSolved) * 100) 
     : 0;
 
   return (
     <div className="space-y-8">
+      {/* Guest Banner */}
+      {isGuest && (
+        <div className="p-6 rounded-[2rem] bg-gradient-to-r from-orange-500/15 via-amber-500/10 to-purple-600/15 border-2 border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.15)] flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-center md:text-left flex-col md:flex-row">
+            <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
+              <Flame size={24} className="fill-orange-500/30 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-white uppercase tracking-wider">Guest Profile active</h4>
+              <p className="text-xs text-slate-300 font-medium">
+                You currently have a streak of <strong className="text-orange-400 font-extrabold">{stats.streak}</strong> and <strong className="text-white">{stats.xp} XP</strong> as guest. Convert to a free permanent account to save your high score permanently and claim your rank!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onConvertProgress}
+            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md shadow-orange-500/10 whitespace-nowrap"
+          >
+            💎 CLAIM FREE ACCOUNT
+          </button>
+        </div>
+      )}
       {/* Hero Section */}
       <div className="relative overflow-hidden glass p-8 md:p-12 rounded-[3rem] bg-gradient-to-br from-brand-primary/20 via-brand-secondary/5 to-brand-accent/10 border border-white/10 shadow-2xl">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Timer, Zap, ArrowRight, RefreshCcw, Home } from 'lucide-react';
+import { Trophy, Timer, Zap, ArrowRight, RefreshCcw, Home, Flame } from 'lucide-react';
 import { generateProblem, calculateXP } from '../lib/mathUtils';
 import { Difficulty, Problem, UserStats } from '../types';
 import { cn } from '../lib/utils';
@@ -10,9 +10,11 @@ interface QuizProps {
   difficulty: Difficulty;
   onFinish: (score: number, total: number, xpGained: number) => void;
   onExit: () => void;
+  isGuest?: boolean;
+  onConvertProgress?: () => void;
 }
 
-export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
+export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertProgress }: QuizProps) {
   const [currentProblem, setCurrentProblem] = useState<Problem>(generateProblem(difficulty));
   const [userInput, setUserInput] = useState('');
   const [score, setScore] = useState(0);
@@ -22,6 +24,7 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [activeFeedbackTag, setActiveFeedbackTag] = useState<string | null>(null);
+  const [showMilestone, setShowMilestone] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -65,6 +68,9 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
           origin: { y: 0.6 },
           colors: ['#f43f5e', '#fbbf24']
         });
+        if (isGuest) {
+          setShowMilestone(true);
+        }
       }
     } else {
       setStreak(0);
@@ -258,6 +264,58 @@ export default function Quiz({ difficulty, onFinish, onExit }: QuizProps) {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Guest Milestone Notification */}
+      <AnimatePresence>
+        {showMilestone && isGuest && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMilestone(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 25 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 25 }}
+              className="relative w-full max-w-md bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 border-2 border-orange-500 rounded-3xl p-8 shadow-[0_0_40px_rgba(249,115,22,0.4)] space-y-5 text-center z-10"
+            >
+              <div className="w-16 h-16 bg-orange-500/20 border border-orange-450 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                <Flame size={32} className="text-orange-400 fill-orange-500 animate-pulse" />
+              </div>
+              <h3 className="text-2xl font-display font-black text-white uppercase tracking-wider">
+                🔥 AMAZING STREAK!
+              </h3>
+              <p className="text-sm text-slate-200 leading-relaxed font-semibold">
+                🔥 Amazing streak! Sign up for a free account to save your high score permanently and claim your official rank on the Global Leaderboard!
+              </p>
+              <div className="flex flex-col gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMilestone(false);
+                    if (onConvertProgress) {
+                      onConvertProgress();
+                    }
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25"
+                >
+                  💎 CLAIM MY FREE ACCOUNT
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMilestone(false)}
+                  className="w-full py-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer"
+                >
+                  Keep Playing as Guest
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

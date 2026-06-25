@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Brain, Settings, Trophy, Flame, Play, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { Difficulty, Problem } from '../types';
-import { generateProblem } from '../lib/mathUtils';
+import { generateProblem, calculateXP } from '../lib/mathUtils';
 import { cn } from '../lib/utils';
 
 interface LearnArenaProps {
   onExit: () => void;
-  onProblemChange?: (problemText: string | null) => void;
+  onFinish?: (score: number, total: number, xpGained: number, difficulty: Difficulty, sections: string[]) => void;
 }
 
 const typeDetails: Record<string, { label: string; desc: string; icon: string }> = {
@@ -26,7 +26,7 @@ const difficultyDetails: Record<Difficulty, { label: string; desc: string; color
   extreme: { label: 'Extreme Mode', desc: 'Insane brain busters to test master scholars', color: 'text-rose-400 border-rose-500/20', bg: 'bg-rose-500/5 hover:bg-rose-500/10 text-rose-400', activeBg: 'bg-rose-500 text-slate-950 font-black shadow-[0_0_15px_rgba(244,63,94,0.4)]' }
 };
 
-export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps) {
+export default function LearnArena({ onExit, onFinish }: LearnArenaProps) {
   const [isStarted, setIsStarted] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [types, setTypes] = useState<string[]>(['addition', 'subtraction']);
@@ -38,18 +38,6 @@ export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps)
   
   // Keep track of which answers were correct for review
   const [userAnswers, setUserAnswers] = useState<{ problem: Problem; userAns: string; isCorrect: boolean }[]>([]);
-
-  const activeQuestion = isStarted && !isFinished && questions[currentIndex] ? questions[currentIndex].question : null;
-
-  React.useEffect(() => {
-    onProblemChange?.(activeQuestion);
-  }, [activeQuestion, onProblemChange]);
-
-  React.useEffect(() => {
-    return () => {
-      onProblemChange?.(null);
-    };
-  }, [onProblemChange]);
 
   const toggleType = (t: string) => {
     setTypes(prev => {
@@ -85,6 +73,7 @@ export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps)
     const currentQuestion = questions[currentIndex];
     const isCorrect = userInput.trim().toLowerCase() === String(currentQuestion.answer).trim().toLowerCase();
     
+    const nextScore = score + (isCorrect ? 1 : 0);
     if (isCorrect) {
       setScore(s => s + 1);
     }
@@ -100,6 +89,8 @@ export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps)
       setUserInput('');
     } else {
       setIsFinished(true);
+      const xpGained = calculateXP(true, difficulty) * nextScore;
+      onFinish?.(nextScore, 20, xpGained, difficulty, types);
     }
   };
 
@@ -232,6 +223,7 @@ export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps)
   // 2. Finished View (With Review Panel!)
   if (isFinished) {
     const accuracy = Math.round((score / 20) * 100);
+    const xpGained = calculateXP(true, difficulty) * score;
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Results Card */}
@@ -253,17 +245,21 @@ export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps)
           </div>
 
           {/* Score Stats Row */}
-          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
             <div className="bg-slate-950/40 border border-white/5 p-4 rounded-2xl text-center">
-              <span className="text-xs text-slate-400 font-medium block">Correct Answers</span>
-              <span className="text-3xl font-black text-white mt-1 block">{score} / 20</span>
+              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Correct</span>
+              <span className="text-2xl font-black text-white mt-1 block">{score} / 20</span>
             </div>
             <div className="bg-slate-950/40 border border-white/5 p-4 rounded-2xl text-center">
-              <span className="text-xs text-slate-400 font-medium block">Accuracy</span>
+              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Accuracy</span>
               <span className={cn(
-                "text-3xl font-black mt-1 block",
+                "text-2xl font-black mt-1 block",
                 accuracy >= 80 ? "text-emerald-400" : accuracy >= 50 ? "text-amber-400" : "text-rose-400"
               )}>{accuracy}%</span>
+            </div>
+            <div className="bg-slate-950/40 border border-white/5 p-4 rounded-2xl text-center">
+              <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">XP Gained</span>
+              <span className="text-2xl font-black text-brand-primary mt-1 block">+{xpGained}</span>
             </div>
           </div>
 
@@ -302,9 +298,15 @@ export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps)
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={() => setIsStarted(false)}
-              className="flex-1 py-3.5 bg-slate-950/50 hover:bg-slate-950/80 border border-white/10 hover:border-white/20 text-white font-black uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer text-center text-sm"
+              className="flex-1 py-3.5 bg-slate-950/50 hover:bg-slate-950/80 border border-white/10 hover:border-white/20 text-slate-300 hover:text-white font-black uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer text-center text-sm"
             >
               Adjust Settings
+            </button>
+            <button
+              onClick={onExit}
+              className="flex-1 py-3.5 bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/30 text-brand-primary font-black uppercase tracking-wider rounded-xl transition-all duration-200 cursor-pointer text-center text-sm"
+            >
+              Go to Dashboard
             </button>
             <button
               onClick={startTraining}

@@ -129,8 +129,12 @@ export default function Dashboard({ stats, onStartQuiz, isGuest, onConvertProgre
                       {Math.round((session.score / session.total) * 100)}%
                     </div>
                     <div>
-                      <p className="font-bold">Arena Session</p>
-                      <p className="text-xs text-slate-500">{session.date}</p>
+                      <p className="font-bold text-sm text-white">{session.arenaType || "Arena Session"}</p>
+                      <p className="text-xs text-slate-500 font-medium">
+                        {session.date}
+                        {session.difficulty && ` • ${session.difficulty.toUpperCase()}`}
+                        {session.sections && session.sections.length > 0 && ` • ${session.sections.map(s => s.replace('_', ' ')).join(', ')}`}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">

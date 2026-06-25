@@ -15,9 +15,10 @@ interface ArenaMatchesProps {
   };
   onExit: () => void;
   soundEffectsEnabled: boolean;
+  onMatchFinished?: (score: number, total: number, xpGained: number) => void;
 }
 
-export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled }: ArenaMatchesProps) {
+export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled, onMatchFinished }: ArenaMatchesProps) {
   // Game states: 'idle' | 'searching' | 'playing' | 'ended'
   const [gameState, setGameState] = useState<'idle' | 'searching' | 'playing' | 'ended'>('idle');
   const [gameId, setGameId] = useState<string>('');
@@ -433,6 +434,18 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled 
         console.error(err);
       }
     }
+
+    const localScore = isPlayer1 ? finalData.player1Correct : finalData.player2Correct;
+    const isLocalWinner = winnerUID === currentUser.uid;
+    const isTie = winner === 'Tie' || winner === 'Draw';
+    let localXpGained = localScore * 10;
+    if (isLocalWinner) {
+      localXpGained += 150;
+    } else if (isTie) {
+      localXpGained += 50;
+    }
+    
+    onMatchFinished?.(localScore, 20, localXpGained);
   };
 
   // Cancel matchmaking search

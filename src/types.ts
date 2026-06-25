@@ -19,6 +19,8 @@ export interface UserStats {
     score: number;
     total: number;
     difficulty?: Difficulty;
+    arenaType?: string;
+    sections?: string[];
   }[];
   unlockedBadges?: string[];
   weeklyProgress?: {

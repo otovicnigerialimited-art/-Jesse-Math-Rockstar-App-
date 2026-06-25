@@ -54,92 +54,32 @@ async function startServer() {
       }
       aiClient = new GoogleGenAI({
         apiKey: key,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
       });
     }
     return aiClient;
   };
 
-  // Secure AI Tutor Route (Google AI Studio Gemini API)
-  app.post("/api/gemini/tutor", async (req, res) => {
-    const { message, currentProblem, history } = req.body;
+  // Secure Google AI Studio Gemini API Endpoint
+  app.post("/api/gemini", async (req, res) => {
+    const { prompt, model } = req.body;
 
     try {
       const ai = getAiClient();
-      
-      const systemInstruction = 
-        "You are 'Axel the AI Math Coach', an exciting, high-energy math tutor for children! " +
-        "Your style is extremely cool, fun, encouraging, and uses positive rockstar and music slang (like 'Rock on!', 'Absolutely legendary!', 'Math Superstar!', 'Guitar Solo of Correctness!').\n\n" +
-        "RULES:\n" +
-        "1. NEVER give the final answer directly to a math problem. Instead, explain the logic step-by-step to guide the student.\n" +
-        "2. Keep the language simple, engaging, visual, and highly supportive (suitable for children ages 6 to 12).\n" +
-        "3. Use cool emojis like 🎸, ⚡, 🏆, 🔥, 🚀, and 🎓 to create a fun gaming atmosphere!\n" +
-        "4. If there's an active math problem, offer a simple visual analogy or breakdown of the numbers.";
-
-      const contents: any[] = [];
-      
-      if (currentProblem) {
-        contents.push({
-          role: "user",
-          parts: [{ text: `I am stuck on this math problem: "${currentProblem}". Help me understand it step-by-step, but don't tell me the answer directly yet!` }]
-        });
-      }
-
-      if (history && Array.isArray(history)) {
-        history.forEach((msg: any) => {
-          contents.push({
-            role: msg.role === "assistant" ? "model" : "user",
-            parts: [{ text: msg.text }]
-          });
-        });
-      }
-
-      if (message) {
-        contents.push({
-          role: "user",
-          parts: [{ text: message }]
-        });
-      } else if (!currentProblem) {
-        contents.push({
-          role: "user",
-          parts: [{ text: "Hello Axel! Let's rock some math!" }]
-        });
-      }
-
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: contents,
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.7,
-        }
+        model: model || "gemini-2.5-flash",
+        contents: prompt || "Hello!",
       });
 
       res.json({
         success: true,
-        reply: response.text || "Keep rocking! Let me know if you want another hint! 🎸",
+        text: response.text
       });
-
     } catch (error: any) {
       console.error("Gemini API Error:", error);
-      
-      if (!process.env.GEMINI_API_KEY) {
-        res.json({
-          success: false,
-          reply: "🎸 Rock on! Axel the AI Math Coach is ready to jam, but my Google AI Studio API key (GEMINI_API_KEY) is currently offline. Ask your developer or Vercel administrator to add your secure GEMINI_API_KEY to the environment variables, and I'll jump right on stage! ⚡",
-          isConfigError: true
-        });
-      } else {
-        res.json({
-          success: false,
-          reply: "⚡ Oh no, my amplifier got unplugged! Let's try that query again. Keep on rocking! 🎸",
-          error: error.message
-        });
-      }
+      res.status(500).json({
+        success: false,
+        error: error.message || "Failed to process request with Gemini API"
+      });
     }
   });
 

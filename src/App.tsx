@@ -50,7 +50,6 @@ import CreatorPanel from './components/CreatorPanel';
 import AvatarPreview from './components/AvatarPreview';
 import { updateSchoolStudentProgress } from './lib/schoolDb';
 import ConvertAccountModal from './components/ConvertAccountModal';
-import AiCoachWidget from './components/AiCoachWidget';
 
 
 import jesseRockLogo from './assets/images/jesse_rock_logo_1782041250458.jpg';
@@ -134,7 +133,6 @@ export default function App() {
 
   const [userDeviceId, setUserDeviceId] = useState<string | null>(null);
   const [practiceLesson, setPracticeLesson] = useState<Lesson | null>(null);
-  const [activeProblem, setActiveProblem] = useState<string | null>(null);
 
   const fetchAndSyncProfile = async (uname: string, deviceId: string) => {
     const role = localStorage.getItem('jesse_rock_role') as any || 'individual';
@@ -510,6 +508,16 @@ export default function App() {
   const handleQuizFinish = async (score: number, total: number, xpGained: number) => {
     const { weekKey } = getWeeklyData();
     let updatedStats: any = null;
+    const formattedDate = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const newHistoryItem = {
+      date: formattedDate,
+      score: score,
+      total: total,
+      difficulty: selectedDifficulty,
+      arenaType: 'Practice Quiz',
+      sections: practiceLesson ? [practiceLesson.title] : ['Math Workout']
+    };
 
     setStats(prev => {
       const newXP = prev.xp + xpGained;
@@ -535,7 +543,8 @@ export default function App() {
         level: newLevel,
         streak: currentStreak,
         bestStreak: best,
-        weeklyProgress: newWeekly
+        weeklyProgress: newWeekly,
+        history: [...(prev.history || []), newHistoryItem]
       };
       updatedStats = next;
       return next;
@@ -577,6 +586,162 @@ export default function App() {
     
     setPracticeLesson(null);
     setActiveTab('dashboard');
+  };
+
+  const handleLearnArenaFinish = async (score: number, total: number, xpGained: number, difficulty: Difficulty, sections: string[]) => {
+    const { weekKey } = getWeeklyData();
+    let updatedStats: any = null;
+    const formattedDate = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const newHistoryItem = {
+      date: formattedDate,
+      score: score,
+      total: total,
+      difficulty: difficulty,
+      arenaType: 'Learning Arena',
+      sections: sections
+    };
+
+    setStats(prev => {
+      const newXP = prev.xp + xpGained;
+      const newLevel = Math.floor(newXP / 1000) + 1;
+      const currentStreak = score > 0 ? prev.streak + 1 : 0;
+      const best = Math.max(prev.bestStreak, currentStreak);
+      
+      const prevWeekly = prev.weeklyProgress?.weekKey === weekKey 
+        ? prev.weeklyProgress 
+        : { weekKey, solvedThisWeek: 0, xpThisWeek: 0, claimedWeeklyBadge: false };
+      
+      const newWeekly = {
+        ...prevWeekly,
+        solvedThisWeek: (prevWeekly?.solvedThisWeek || 0) + score,
+        xpThisWeek: (prevWeekly?.xpThisWeek || 0) + xpGained
+      };
+      
+      const next = {
+        ...prev,
+        totalSolved: prev.totalSolved + total,
+        correctAnswers: prev.correctAnswers + score,
+        xp: newXP,
+        level: newLevel,
+        streak: currentStreak,
+        bestStreak: best,
+        weeklyProgress: newWeekly,
+        history: [...(prev.history || []), newHistoryItem]
+      };
+      updatedStats = next;
+      return next;
+    });
+
+    if (authState.role === 'guest') {
+      return;
+    }
+
+    if (userDeviceId) {
+      try {
+        const finalBest = Math.max(stats.bestStreak, updatedStats?.streak || 0);
+        await setDoc(doc(db, "users", userDeviceId), {
+          totalSolved: updatedStats?.totalSolved ?? (stats.totalSolved + total),
+          correctAnswers: updatedStats?.correctAnswers ?? (stats.correctAnswers + score),
+          xp: updatedStats?.xp ?? (stats.xp + xpGained),
+          level: updatedStats?.level ?? (Math.floor((stats.xp + xpGained) / 1000) + 1),
+          streak: updatedStats?.streak ?? (score > 0 ? stats.streak + 1 : 0),
+          bestStreak: finalBest,
+          streakScore: finalBest,
+          badges: updatedStats?.unlockedBadges ?? (stats.unlockedBadges || []),
+          weeklyProgress: updatedStats?.weeklyProgress ?? null,
+          history: updatedStats?.history ?? (stats.history || [])
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `users/${userDeviceId}`);
+      }
+    }
+
+    if (authState.role === 'student' && authState.userId) {
+      try {
+        await updateSchoolStudentProgress(authState.userId, score, xpGained, score > 0);
+      } catch (err) {
+        console.warn("School student progress update bypassed / failed:", err);
+      }
+    }
+  };
+
+  const handlePlayArenaFinish = async (score: number, total: number, xpGained: number) => {
+    const { weekKey } = getWeeklyData();
+    let updatedStats: any = null;
+    const formattedDate = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const newHistoryItem = {
+      date: formattedDate,
+      score: score,
+      total: total,
+      difficulty: 'hard' as Difficulty,
+      arenaType: 'Play Arena',
+      sections: ['Addition', 'Subtraction', 'Multiplication']
+    };
+
+    setStats(prev => {
+      const newXP = prev.xp + xpGained;
+      const newLevel = Math.floor(newXP / 1000) + 1;
+      const currentStreak = score > 0 ? prev.streak + 1 : 0;
+      const best = Math.max(prev.bestStreak, currentStreak);
+      
+      const prevWeekly = prev.weeklyProgress?.weekKey === weekKey 
+        ? prev.weeklyProgress 
+        : { weekKey, solvedThisWeek: 0, xpThisWeek: 0, claimedWeeklyBadge: false };
+      
+      const newWeekly = {
+        ...prevWeekly,
+        solvedThisWeek: (prevWeekly?.solvedThisWeek || 0) + score,
+        xpThisWeek: (prevWeekly?.xpThisWeek || 0) + xpGained
+      };
+      
+      const next = {
+        ...prev,
+        totalSolved: prev.totalSolved + total,
+        correctAnswers: prev.correctAnswers + score,
+        xp: newXP,
+        level: newLevel,
+        streak: currentStreak,
+        bestStreak: best,
+        weeklyProgress: newWeekly,
+        history: [...(prev.history || []), newHistoryItem]
+      };
+      updatedStats = next;
+      return next;
+    });
+
+    if (authState.role === 'guest') {
+      return;
+    }
+
+    if (userDeviceId) {
+      try {
+        const finalBest = Math.max(stats.bestStreak, updatedStats?.streak || 0);
+        await setDoc(doc(db, "users", userDeviceId), {
+          totalSolved: updatedStats?.totalSolved ?? (stats.totalSolved + total),
+          correctAnswers: updatedStats?.correctAnswers ?? (stats.correctAnswers + score),
+          xp: updatedStats?.xp ?? (stats.xp + xpGained),
+          level: updatedStats?.level ?? (Math.floor((stats.xp + xpGained) / 1000) + 1),
+          streak: updatedStats?.streak ?? (score > 0 ? stats.streak + 1 : 0),
+          bestStreak: finalBest,
+          streakScore: finalBest,
+          badges: updatedStats?.unlockedBadges ?? (stats.unlockedBadges || []),
+          weeklyProgress: updatedStats?.weeklyProgress ?? null,
+          history: updatedStats?.history ?? (stats.history || [])
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `users/${userDeviceId}`);
+      }
+    }
+
+    if (authState.role === 'student' && authState.userId) {
+      try {
+        await updateSchoolStudentProgress(authState.userId, score, xpGained, score > 0);
+      } catch (err) {
+        console.warn("School student progress update bypassed / failed:", err);
+      }
+    }
   };
 
 
@@ -1080,7 +1245,6 @@ export default function App() {
                         setPracticeLesson(null);
                         setActiveTab('hub');
                       }}
-                      onProblemChange={setActiveProblem}
                     />
                   </div>
                 ) : (
@@ -1088,6 +1252,9 @@ export default function App() {
                     currentUser={{ uid: userDeviceId || "dev", username: authState.username || "Human Player" }}
                     onExit={() => setActiveTab('home')}
                     soundEffectsEnabled={configSettings.soundEffects}
+                    onMatchFinished={(score, total, xpGained) => {
+                      handlePlayArenaFinish(score, total, xpGained);
+                    }}
                   />
                 )}
               </motion.div>
@@ -1158,7 +1325,12 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
               >
-                <LearnArena onExit={() => setActiveTab('home')} onProblemChange={setActiveProblem} />
+                <LearnArena 
+                  onExit={() => setActiveTab('home')} 
+                  onFinish={(score, total, xpGained, difficulty, sections) => {
+                    handleLearnArenaFinish(score, total, xpGained, difficulty, sections);
+                  }}
+                />
               </motion.div>
             )}
 
@@ -1536,9 +1708,6 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Persistent AI Rockstar Math Coach Widget */}
-      <AiCoachWidget currentProblem={activeProblem || undefined} />
 
     </div>
   );

@@ -12,21 +12,11 @@ interface QuizProps {
   onExit: () => void;
   isGuest?: boolean;
   onConvertProgress?: () => void;
-  onProblemChange?: (problemText: string | null) => void;
 }
 
-export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertProgress, onProblemChange }: QuizProps) {
+export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertProgress }: QuizProps) {
   const [currentProblem, setCurrentProblem] = useState<Problem>(generateProblem(difficulty));
 
-  useEffect(() => {
-    onProblemChange?.(currentProblem.question);
-  }, [currentProblem, onProblemChange]);
-
-  useEffect(() => {
-    return () => {
-      onProblemChange?.(null);
-    };
-  }, [onProblemChange]);
   const [userInput, setUserInput] = useState('');
   const [score, setScore] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);

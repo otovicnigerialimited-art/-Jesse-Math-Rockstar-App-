@@ -160,6 +160,45 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
         </div>
       </div>
 
+      {/* DEV.to Featured Article Card */}
+      <div className="p-8 md:p-10 rounded-[2.5rem] bg-slate-900/50 border border-emerald-500/30 shadow-lg shadow-emerald-500/5 relative overflow-hidden max-w-4xl mx-auto">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 justify-between">
+          <div className="space-y-4 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase text-emerald-400 tracking-wider animate-pulse">
+              <Sparkles size={11} /> FEATURED ON DEV.TO COMMUNITY
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight leading-snug">
+              How I Built, Deployed, and Google-Indexed a Full-Stack AI App in Under 24 Hours
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
+              Curious about the behind-the-scenes magic? In this popular engineering article, 11-year-old developer Jesse Otobo explains how he designed the real-time matchmaking, integrated firestore state systems, set up production cloud environments, and achieved instantaneous Google indexation in less than a single day!
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-2.5">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 font-mono text-[9px] text-emerald-300 font-bold uppercase">
+                ⚡ 24-Hour Challenge
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-indigo-500/5 border border-indigo-500/10 font-mono text-[9px] text-indigo-300 font-bold uppercase">
+                🌐 Real-Time Sync
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-violet-500/5 border border-violet-500/10 font-mono text-[9px] text-violet-300 font-bold uppercase">
+                🏆 Search Engine Indexing
+              </span>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <a 
+              href="https://dev.to/jesse_otobo_/how-i-built-deployed-and-google-indexed-a-full-stack-ai-app-in-under-24-hourspublished-true-h5g"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-wider text-xs rounded-2xl shadow-xl hover:shadow-emerald-500/10 active:scale-95 transition-all cursor-pointer"
+            >
+              <Rocket size={14} /> Read Full Article
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Styled Founder Story Section as requested */}
       <section 
         id="founder-story" 

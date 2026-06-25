@@ -166,6 +166,16 @@ export default function Dashboard({ stats, onStartQuiz, isGuest, onConvertProgre
             <p className="text-slate-300 text-sm max-w-xl font-medium leading-relaxed">
               Jesse is a brilliant <span className="text-yellow-400 font-bold">11-year-old creator</span> who built this beautiful math academy using cutting-edge <span className="text-cyan-300 font-bold">Vibe Coding</span> technology! In Jesse's words: <span className="italic text-brand-accent font-bold">"We are young genius."</span>
             </p>
+            <div className="pt-1.5 flex flex-wrap gap-3 justify-center md:justify-start">
+              <a 
+                href="https://dev.to/jesse_otobo_/how-i-built-deployed-and-google-indexed-a-full-stack-ai-app-in-under-24-hourspublished-true-h5g"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                📖 Read Jesse's DEV.to Engineering Story
+              </a>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 justify-center md:justify-end">
             <div className="px-4 py-2 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-2 text-xs font-bold text-slate-300 backdrop-blur-sm">

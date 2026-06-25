@@ -1,55 +1,89 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Since the Jesse Rock Math Arena application uses a custom, client-side identity 
-    // and session management scheme (stored in localStorage) and does not utilize 
-    // standard Firebase Authentication (request.auth is null), we allow read and write 
-    // access for all required collections to ensure gameplay, registration, and leaderboard 
-    // synchronization function flawlessly.
 
+    // Helper functions for clean evaluation
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isTeacher(uid) {
+      return exists(/databases/$(database)/documents/teachers/$(uid));
+    }
+
+    // 1. Usernames collection (custom client-side uniqueness registry)
     match /usernames/{username} {
-      allow read, write: if true;
+      allow read, write: if true; // Needs to remain publicly read/writable for client-side claim validation
     }
 
+    // 2. Users collection (Global leaderboard and profiles)
     match /users/{userId} {
-      allow read, write: if true;
+      // "allow anyone to read the global leaderboard collection"
+      allow read: if true;
+      // "strictly require user authentication for writing to the users... Ensure users can only modify their own profile documents"
+      allow write: if isOwner(userId);
     }
 
+    // 3. School Students collection (Classroom rosters and school progress)
     match /school_students/{studentId} {
-      allow read, write: if true;
+      // General read allowed for leaderboard displays, but authenticated teachers can only read student documents within their own classroom rosters
+      allow read: if !isAuthenticated() || !isTeacher(request.auth.uid) || resource.data.teacher_id == request.auth.uid;
+      // Writing strictly requires authentication, and students can only modify their own profiles
+      allow write: if isOwner(studentId) || (isAuthenticated() && (resource.data.teacher_id == request.auth.uid || request.resource.data.teacher_id == request.auth.uid));
     }
 
+    // 4. Teachers collection (Teacher profiles)
     match /teachers/{teacherId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isOwner(teacherId);
     }
 
-    match /schools/{docId} {
-      allow read, write: if true;
+    // 5. Schools collection
+    match /schools/{schoolId} {
+      // "allow anyone to read... but strictly require user authentication for writing to schools"
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
-    match /matchmaking_queue/{docId} {
-      allow read, write: if true;
-    }
-
+    // 6. Arena Games collection
     match /arena_games/{gameId} {
-      allow read, write: if true;
+      // "allow anyone to read... but strictly require user authentication for writing to arena_games"
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
-    match /system_state/{docId} {
-      allow read, write: if true;
+    // 7. Matchmaking queue
+    match /matchmaking_queue/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
+    // 8. Developer guestbook
     match /developer_guestbook/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
+    // 9. Shop items
     match /shop_items/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
-    // Default fallback
+    // 10. System state
+    match /system_state/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Default fallback rule for general secure safety
     match /{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
   }
 }

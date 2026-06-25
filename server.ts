@@ -174,6 +174,11 @@ async function startServer() {
       }
       aiClient = new GoogleGenAI({
         apiKey: key,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
       });
     }
     return aiClient;
@@ -186,7 +191,7 @@ async function startServer() {
     try {
       const ai = getAiClient();
       const response = await ai.models.generateContent({
-        model: model || "gemini-2.5-flash",
+        model: model || "gemini-3.5-flash",
         contents: prompt || "Hello!",
       });
 

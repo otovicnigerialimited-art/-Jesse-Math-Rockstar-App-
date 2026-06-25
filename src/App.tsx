@@ -50,6 +50,7 @@ import CreatorPanel from './components/CreatorPanel';
 import AvatarPreview from './components/AvatarPreview';
 import { updateSchoolStudentProgress } from './lib/schoolDb';
 import ConvertAccountModal from './components/ConvertAccountModal';
+import AiCoachWidget from './components/AiCoachWidget';
 
 
 import jesseRockLogo from './assets/images/jesse_rock_logo_1782041250458.jpg';
@@ -133,6 +134,7 @@ export default function App() {
 
   const [userDeviceId, setUserDeviceId] = useState<string | null>(null);
   const [practiceLesson, setPracticeLesson] = useState<Lesson | null>(null);
+  const [activeProblem, setActiveProblem] = useState<string | null>(null);
 
   const fetchAndSyncProfile = async (uname: string, deviceId: string) => {
     const role = localStorage.getItem('jesse_rock_role') as any || 'individual';
@@ -1078,6 +1080,7 @@ export default function App() {
                         setPracticeLesson(null);
                         setActiveTab('hub');
                       }}
+                      onProblemChange={setActiveProblem}
                     />
                   </div>
                 ) : (
@@ -1155,7 +1158,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
               >
-                <LearnArena onExit={() => setActiveTab('home')} />
+                <LearnArena onExit={() => setActiveTab('home')} onProblemChange={setActiveProblem} />
               </motion.div>
             )}
 
@@ -1533,6 +1536,9 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Persistent AI Rockstar Math Coach Widget */}
+      <AiCoachWidget currentProblem={activeProblem || undefined} />
 
     </div>
   );

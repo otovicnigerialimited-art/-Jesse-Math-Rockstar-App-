@@ -7,6 +7,7 @@ import { cn } from '../lib/utils';
 
 interface LearnArenaProps {
   onExit: () => void;
+  onProblemChange?: (problemText: string | null) => void;
 }
 
 const typeDetails: Record<string, { label: string; desc: string; icon: string }> = {
@@ -25,7 +26,7 @@ const difficultyDetails: Record<Difficulty, { label: string; desc: string; color
   extreme: { label: 'Extreme Mode', desc: 'Insane brain busters to test master scholars', color: 'text-rose-400 border-rose-500/20', bg: 'bg-rose-500/5 hover:bg-rose-500/10 text-rose-400', activeBg: 'bg-rose-500 text-slate-950 font-black shadow-[0_0_15px_rgba(244,63,94,0.4)]' }
 };
 
-export default function LearnArena({ onExit }: LearnArenaProps) {
+export default function LearnArena({ onExit, onProblemChange }: LearnArenaProps) {
   const [isStarted, setIsStarted] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [types, setTypes] = useState<string[]>(['addition', 'subtraction']);
@@ -37,6 +38,18 @@ export default function LearnArena({ onExit }: LearnArenaProps) {
   
   // Keep track of which answers were correct for review
   const [userAnswers, setUserAnswers] = useState<{ problem: Problem; userAns: string; isCorrect: boolean }[]>([]);
+
+  const activeQuestion = isStarted && !isFinished && questions[currentIndex] ? questions[currentIndex].question : null;
+
+  React.useEffect(() => {
+    onProblemChange?.(activeQuestion);
+  }, [activeQuestion, onProblemChange]);
+
+  React.useEffect(() => {
+    return () => {
+      onProblemChange?.(null);
+    };
+  }, [onProblemChange]);
 
   const toggleType = (t: string) => {
     setTypes(prev => {

@@ -163,8 +163,7 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
             const data = d.data();
             const uname = data.username || '';
             const isGuest = uname.toLowerCase().includes('guest') || uname === 'Anonymous Hero' || d.id.startsWith('guest_');
-            const isPreinstalled = d.id === 'student_leo_default' || d.id === 'student_emma_default' || d.id.includes('_default');
-            if (!isGuest && !isPreinstalled && uname) {
+            if (!isGuest && uname) {
               allPlayers.push({
                 id: d.id,
                 username: uname,
@@ -180,8 +179,7 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
             const data = d.data();
             const uname = data.username || '';
             const isGuest = uname.toLowerCase().includes('guest') || uname === 'Anonymous Hero' || d.id.startsWith('guest_');
-            const isPreinstalled = d.id === 'student_leo_default' || d.id === 'student_emma_default' || d.id.includes('_default');
-            if (!isGuest && !isPreinstalled && uname) {
+            if (!isGuest && uname) {
               const progress = data.school_math_progress || {};
               allPlayers.push({
                 id: d.id,

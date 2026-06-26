@@ -376,37 +376,6 @@ export default function App() {
     }
   }, [stats, authState.role]);
 
-  // Real-time online heartbeat hook for live player scanning
-  useEffect(() => {
-    if (!authState.isAuthenticated || !userDeviceId) return;
-
-    const uid = authState.userId || userDeviceId;
-    const colName = authState.role === 'student' ? 'school_students' : 'users';
-
-    const updateActivity = async () => {
-      try {
-        await updateDoc(doc(db, colName, uid), {
-          lastActiveAt: Date.now(),
-          username: authState.username || "Anonymous Hero"
-        });
-      } catch (err) {
-        try {
-          await setDoc(doc(db, colName, uid), {
-            lastActiveAt: Date.now(),
-            username: authState.username || "Anonymous Hero"
-          }, { merge: true });
-        } catch (subErr) {
-          console.warn("Heartbeat update failed:", subErr);
-        }
-      }
-    };
-
-    updateActivity();
-
-    // Check-in every 30 seconds
-    const interval = setInterval(updateActivity, 30000);
-    return () => clearInterval(interval);
-  }, [authState.isAuthenticated, userDeviceId, authState.userId, authState.role, authState.username]);
 
   // Anniversary Reward Hook
   useEffect(() => {
@@ -1040,8 +1009,8 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 p-4 md:p-8 lg:p-12 h-screen overflow-y-auto">
+        <div className="max-w-6xl mx-auto h-full">
           {/* Mobile Header / Toggle Bar */}
           <div className="lg:hidden flex items-center justify-between p-4 bg-slate-900/90 border border-white/10 rounded-2xl mb-6 backdrop-blur-md sticky top-0 z-30 shadow-lg shadow-black/40">
             <div className="flex items-center gap-2.5">

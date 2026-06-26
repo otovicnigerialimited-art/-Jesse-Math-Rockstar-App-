@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Timer, Zap, ArrowRight, RefreshCcw, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
+import { Trophy, Timer, Zap, ArrowRight, RefreshCcw, LogOut, ArrowLeft, Loader2, Search } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
@@ -48,44 +48,98 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
   const [onlineUsersCount, setOnlineUsersCount] = useState(0);
   const [isCanceled, setIsCanceled] = useState(false);
   const [onlinePlayers, setOnlinePlayers] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const queueDocRef = doc(db, "matchmaking_queue", currentUser.uid);
 
-  // Real-time online real players registry scanner
+  // Real-time online real players registry scanner from BOTH users and school_students
   useEffect(() => {
-    const usersCollection = collection(db, "users");
+    let usersList: any[] = [];
+    let studentsList: any[] = [];
 
-    const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
+    const updateOnlinePlayers = () => {
+      // Merge and sort
+      const merged = [...usersList, ...studentsList];
+      merged.sort((a, b) => b.lastActive - a.lastActive);
+      setOnlinePlayers(merged);
+      setOnlineUsersCount(merged.length);
+    };
+
+    // Listen to users
+    const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
       const activeThreshold = Date.now() - 300000; // Active within the last 5 minutes
       const list: any[] = [];
-
       snapshot.forEach((snap) => {
         const data = snap.data();
         const lastActive = data.lastActiveAt || 0;
+        const uname = data.username || '';
         
-        // Match only genuine registered users with check-ins in the past 5 minutes
-        if (lastActive > activeThreshold) {
+        const isGuest = uname.toLowerCase().includes('guest') || 
+                        uname === 'Anonymous Hero' || 
+                        snap.id.startsWith('guest_') ||
+                        data.role === 'guest';
+        const isPreinstalled = snap.id === 'student_leo_default' || 
+                               snap.id === 'student_emma_default' || 
+                               snap.id.includes('_default');
+
+        if (lastActive > activeThreshold && !isGuest && !isPreinstalled && uname) {
           list.push({
             id: snap.id,
-            username: data.username || "Challenger Genius",
+            username: uname,
             xp: data.xp || 100,
             streak: data.streak || 0,
-            lastActive: lastActive
+            lastActive: lastActive,
+            collection: 'users'
           });
         }
       });
-
-      // Sort with most active at the very top
-      list.sort((a, b) => b.lastActive - a.lastActive);
-      setOnlinePlayers(list);
-      setOnlineUsersCount(list.length);
+      usersList = list;
+      updateOnlinePlayers();
     }, (err) => {
-      console.warn("Real-time active scan warning:", err);
+      console.warn("Users active scan warning:", err);
     });
 
-    return () => unsubscribe();
+    // Listen to school_students
+    const unsubStudents = onSnapshot(collection(db, "school_students"), (snapshot) => {
+      const activeThreshold = Date.now() - 300000; // Active within the last 5 minutes
+      const list: any[] = [];
+      snapshot.forEach((snap) => {
+        const data = snap.data();
+        const lastActive = data.lastActiveAt || 0;
+        const uname = data.username || '';
+        
+        const isGuest = uname.toLowerCase().includes('guest') || 
+                        uname === 'Anonymous Hero' || 
+                        snap.id.startsWith('guest_') ||
+                        data.role === 'guest';
+        const isPreinstalled = snap.id === 'student_leo_default' || 
+                               snap.id === 'student_emma_default' || 
+                               snap.id.includes('_default');
+
+        if (lastActive > activeThreshold && !isGuest && !isPreinstalled && uname) {
+          const progress = data.school_math_progress || {};
+          list.push({
+            id: snap.id,
+            username: uname,
+            xp: data.xp ?? progress.xp ?? 100,
+            streak: data.streak ?? progress.streak ?? 0,
+            lastActive: lastActive,
+            collection: 'school_students'
+          });
+        }
+      });
+      studentsList = list;
+      updateOnlinePlayers();
+    }, (err) => {
+      console.warn("Students active scan warning:", err);
+    });
+
+    return () => {
+      unsubUsers();
+      unsubStudents();
+    };
   }, []);
 
   // Focus input automatically
@@ -536,15 +590,39 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
                 </div>
               </div>
 
+              {/* Search Bar */}
+              <div className="relative">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Search player name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-slate-950/60 border border-white/5 rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50 transition-all font-medium"
+                />
+              </div>
+
               {/* Player list */}
               <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {onlinePlayers.length === 0 ? (
-                  <div className="py-12 text-center text-slate-550 space-y-1">
-                    <p className="text-xs font-bold font-mono">Scanning lobby systems...</p>
-                    <p className="text-[10px] text-slate-500">Only showing real online logged-in students.</p>
-                  </div>
-                ) : (
-                  onlinePlayers.map((player) => {
+                {(() => {
+                  const filteredOnlinePlayers = onlinePlayers.filter((player) => 
+                    player.username.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+
+                  if (filteredOnlinePlayers.length === 0) {
+                    return (
+                      <div className="py-12 text-center text-slate-500 space-y-1">
+                        <p className="text-xs font-bold font-mono">
+                          {searchQuery.trim() !== '' ? "No active scholars match" : "Scanning lobby systems..."}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          {searchQuery.trim() !== '' ? `Could not find any online player named "${searchQuery}"` : "Only showing real online logged-in students."}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return filteredOnlinePlayers.map((player) => {
                     const isMe = player.id === currentUser.uid;
                     return (
                       <div 
@@ -586,8 +664,8 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
                         </div>
                       </div>
                     );
-                  })
-                )}
+                  });
+                })()}
               </div>
 
               <p className="text-[9px] text-slate-500 leading-relaxed text-center pt-2 border-t border-white/5 font-mono">

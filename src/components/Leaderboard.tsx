@@ -158,12 +158,13 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
           // Fetch all players from both collections
           const allPlayers: any[] = [];
           
-          const usersSnap = await getDocs(collection(db, 'users'));
+           const usersSnap = await getDocs(collection(db, 'users'));
           usersSnap.forEach(d => {
             const data = d.data();
             const uname = data.username || '';
             const isGuest = uname.toLowerCase().includes('guest') || uname === 'Anonymous Hero' || d.id.startsWith('guest_');
-            if (!isGuest && uname) {
+            const isPreinstalled = d.id === 'student_leo_default' || d.id === 'student_emma_default' || d.id.includes('_default');
+            if (!isGuest && !isPreinstalled && uname) {
               allPlayers.push({
                 id: d.id,
                 username: uname,
@@ -179,7 +180,8 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
             const data = d.data();
             const uname = data.username || '';
             const isGuest = uname.toLowerCase().includes('guest') || uname === 'Anonymous Hero' || d.id.startsWith('guest_');
-            if (!isGuest && uname) {
+            const isPreinstalled = d.id === 'student_leo_default' || d.id === 'student_emma_default' || d.id.includes('_default');
+            if (!isGuest && !isPreinstalled && uname) {
               const progress = data.school_math_progress || {};
               allPlayers.push({
                 id: d.id,
@@ -340,8 +342,11 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
                           uname === 'Anonymous Hero' || 
                           docSnap.id.startsWith('guest_') ||
                           data.role === 'guest';
+          const isPreinstalled = docSnap.id === 'student_leo_default' || 
+                                 docSnap.id === 'student_emma_default' || 
+                                 docSnap.id.includes('_default');
           
-          if (!isGuest && uname) {
+          if (!isGuest && !isPreinstalled && uname) {
             fetched.push({
               id: docSnap.id,
               username: uname,
@@ -365,8 +370,11 @@ export default function Leaderboard({ currentUser, currentStreak }: LeaderboardP
                           uname === 'Anonymous Hero' || 
                           docSnap.id.startsWith('guest_') ||
                           data.role === 'guest';
+          const isPreinstalled = docSnap.id === 'student_leo_default' || 
+                                 docSnap.id === 'student_emma_default' || 
+                                 docSnap.id.includes('_default');
           
-          if (!isGuest && uname) {
+          if (!isGuest && !isPreinstalled && uname) {
             const progress = data.school_math_progress || {};
             fetched.push({
               id: docSnap.id,

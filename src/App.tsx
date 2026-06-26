@@ -380,15 +380,18 @@ export default function App() {
   useEffect(() => {
     if (!authState.isAuthenticated || !userDeviceId) return;
 
+    const uid = authState.userId || userDeviceId;
+    const colName = authState.role === 'student' ? 'school_students' : 'users';
+
     const updateActivity = async () => {
       try {
-        await updateDoc(doc(db, "users", userDeviceId), {
+        await updateDoc(doc(db, colName, uid), {
           lastActiveAt: Date.now(),
           username: authState.username || "Anonymous Hero"
         });
       } catch (err) {
         try {
-          await setDoc(doc(db, "users", userDeviceId), {
+          await setDoc(doc(db, colName, uid), {
             lastActiveAt: Date.now(),
             username: authState.username || "Anonymous Hero"
           }, { merge: true });
@@ -403,7 +406,7 @@ export default function App() {
     // Check-in every 30 seconds
     const interval = setInterval(updateActivity, 30000);
     return () => clearInterval(interval);
-  }, [authState.isAuthenticated, userDeviceId, authState.username]);
+  }, [authState.isAuthenticated, userDeviceId, authState.userId, authState.role, authState.username]);
 
   // Anniversary Reward Hook
   useEffect(() => {

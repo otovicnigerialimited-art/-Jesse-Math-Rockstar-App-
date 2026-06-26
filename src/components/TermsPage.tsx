@@ -78,61 +78,16 @@ export default function TermsPage() {
     },
     {
       id: "p4",
-      title: "4. Children's Privacy",
+      title: "4. Children's Privacy & Safety",
       icon: <Heart className="text-rose-400" size={16} />,
-      content: "Jesse Rock Math is dedicated to offering a secure educational sandbox environment. We do not solicit, track, or collect persistent offline personal information from student users. Leaderboards require only a temporary display nickname."
-    },
-    {
-      id: "p5",
-      title: "5. COPPA Compliance (Children’s Online Privacy Protection Act)",
-      icon: <Shield className="text-teal-400" size={16} />,
-      content: (
-        <div className="space-y-2 text-slate-300">
-          <p className="text-[11px] leading-relaxed">Jesse Rock Math is fully committed to the safety and privacy of young learners. In strict compliance with COPPA regulations, the platform enforces the following data protection safeguards for users under the age of 13:</p>
-          <ul className="list-none pl-1 space-y-1.5 text-[11px] font-mono text-slate-400 border-l border-teal-500/30 pl-3">
-            <li><strong className="text-teal-400 font-sans block text-xs">No Data Harvesting:</strong> We do not collect, request, or store any persistent personally identifiable information (PII) from children, such as real names, home addresses, phone numbers, or email addresses.</li>
-            <li><strong className="text-teal-400 font-sans block text-xs">Anonymous Identity:</strong> Participation in our live ranking leaderboard requires only a voluntary, temporary display nickname (e.g., "MathRockstar7") to track scores.</li>
-            <li><strong className="text-teal-400 font-sans block text-xs">No Behavioral Tracking or Advertising:</strong> The platform does not deploy tracking cookies, profile-building trackers, or targeted advertising networks.</li>
-            <li><strong className="text-teal-400 font-sans block text-xs">Parental Rights:</strong> Parents or legal guardians retain full rights to request the immediate deletion of their child's leaderboard username from our real-time Firestore database endpoints at any time by contacting system administration.</li>
-          </ul>
-        </div>
-      )
-    },
-    {
-      id: "p6",
-      title: "6. GDPR and UK Data Protection Act Compliance",
-      icon: <FileText className="text-blue-400" size={16} />,
-      content: (
-        <div className="space-y-2 text-slate-300">
-          <p className="text-[11px] leading-relaxed">For users operating within the United Kingdom and the European Economic Area (EEA), we act as the Data Controller under GDPR guidelines.</p>
-          <ul className="list-none pl-1 space-y-1.5 text-[11px] font-mono text-slate-400 border-l border-blue-500/30 pl-3">
-            <li><strong className="text-blue-400 font-sans block text-xs">Lawful Basis for Processing:</strong> Processing anonymous leaderboard names and scores is conducted under the lawful basis of <em className="text-blue-300 font-sans">Legitimate Interests</em> to provide a functional, gamified user experience.</li>
-            <li><strong className="text-blue-400 font-sans block text-xs">Your Data Rights:</strong> Users maintain the right to access their synchronized data records, object to processing, or invoke the "Right to be Forgotten" (Data Erasure).</li>
-            <li><strong className="text-blue-400 font-sans block text-xs">Instant Wiping:</strong> Because our database runs on real-time Firestore pipelines, any requested document deletion takes effect globally within milliseconds.</li>
-          </ul>
-        </div>
-      )
-    },
-    {
-      id: "p7",
-      title: "7. CCPA Compliance (California Consumer Privacy Act)",
-      icon: <Scale className="text-amber-400" size={16} />,
-      content: (
-        <div className="space-y-2 text-slate-300">
-          <p className="text-[11px] leading-relaxed">This section applies solely to residents of the State of California.</p>
-          <ul className="list-none pl-1 space-y-1.5 text-[11px] font-mono text-slate-400 border-l border-amber-500/30 pl-3">
-            <li><strong className="text-amber-400 font-sans block text-xs">We Do Not Sell Your Data:</strong> Jesse Rock Math has never sold, leased, or traded user data or telemetry logs to third-party data brokers for monetary or commercial gain, and will never do so.</li>
-            <li><strong className="text-amber-400 font-sans block text-xs">Right to Know and Delete:</strong> California residents have the right to request a breakdown of what data is collected and demand immediate deletion without facing service discrimination.</li>
-          </ul>
-        </div>
-      )
+      content: "Jesse Rock Math is dedicated to offering a secure educational sandbox environment. We do not solicit, track, or collect persistent offline personal information from student users. Leaderboards require only a temporary display nickname, ensuring complete anonymity and safe interactions."
     }
   ];
 
   const trustBadges = [
-    { title: "COPPA Compliant", desc: "No Kids PII Collected", color: "from-teal-500/10 to-emerald-500/10 border-teal-500/20 text-teal-400" },
-    { title: "GDPR Guaranteed", desc: "Right to be Forgotten", color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20 text-blue-400" },
-    { title: "CCPA Non-Sale", desc: "Zero Data Brokers", color: "from-amber-500/10 to-orange-500/10 border-amber-500/20 text-amber-400" },
+    { title: "Minimal Data", desc: "No PII Collected", color: "from-teal-500/10 to-emerald-500/10 border-teal-500/20 text-teal-400" },
+    { title: "Zero Ads", desc: "No Ad Trackers", color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20 text-blue-400" },
+    { title: "No Data Brokers", desc: "No Data Sold", color: "from-amber-500/10 to-orange-500/10 border-amber-500/20 text-amber-400" },
     { title: "Firebase Secured", desc: "Encrypted Handshakes", color: "from-violet-500/10 to-purple-500/10 border-violet-500/20 text-violet-400" }
   ];
 
@@ -149,7 +104,7 @@ export default function TermsPage() {
             Legal & <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400">Compliance Hub</span>
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-            Review our revised June 2026 guidelines. Below you can inspect our comprehensive, dual-pane layout showing both the Terms of Service and our high-performance, decentralised COPPA-compliant Privacy Policy side-by-side.
+            Review our revised June 2026 guidelines. Below you can inspect our comprehensive, dual-pane layout showing both the Terms of Service and our high-performance, decentralised Privacy Policy side-by-side.
           </p>
         </div>
 
@@ -263,18 +218,14 @@ export default function TermsPage() {
                     <Eye size={16} className="text-emerald-500" />
                     Privacy Policy
                   </h2>
-                  <p className="text-[10px] text-slate-400">Last Revised: June 2026 • Full children's protection guidelines (COPPA), GDPR, and California CCPA guidelines.</p>
+                  <p className="text-[10px] text-slate-400">Last Revised: June 2026 • Full children's protection guidelines and privacy safeguards.</p>
                 </div>
 
                 <div className="space-y-4">
                   {privacySections.map((sec) => (
                     <div 
                       key={sec.id}
-                      className={`p-5 rounded-2xl bg-[#111317]/80 border border-gray-800/60 hover:border-emerald-500/20 transition-all space-y-2.5 text-left group ${
-                        sec.id === 'p5' ? 'border-teal-500/20 bg-teal-950/5' : 
-                        sec.id === 'p6' ? 'border-blue-500/20 bg-blue-950/5' : 
-                        sec.id === 'p7' ? 'border-amber-500/20 bg-amber-950/5' : ''
-                      }`}
+                      className="p-5 rounded-2xl bg-[#111317]/80 border border-gray-800/60 hover:border-emerald-500/20 transition-all space-y-2.5 text-left group"
                     >
                       <div className="flex items-center gap-2">
                         <div className="p-2 bg-slate-950 rounded-lg group-hover:scale-110 transition-transform">
@@ -282,9 +233,6 @@ export default function TermsPage() {
                         </div>
                         <h3 className="text-xs font-black text-white font-mono tracking-tight uppercase flex items-center gap-1.5">
                           {sec.title}
-                          {sec.id === 'p5' && <span className="text-[8px] bg-teal-500/10 text-teal-400 px-1.5 py-0.5 rounded font-mono font-black uppercase">COPPA</span>}
-                          {sec.id === 'p6' && <span className="text-[8px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-mono font-black uppercase">GDPR</span>}
-                          {sec.id === 'p7' && <span className="text-[8px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-mono font-black uppercase">CCPA</span>}
                         </h3>
                       </div>
                       <div className="text-[11px] text-slate-400 leading-relaxed font-medium font-sans">
@@ -331,17 +279,15 @@ export default function TermsPage() {
             <div className="space-y-6 max-w-4xl mx-auto text-left">
               <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-white/5 space-y-1">
                 <span className="text-[10px] font-mono text-emerald-400 font-bold font-mono">REVISED REQUISITE DOCUMENT</span>
-                <h2 className="text-2xl font-black text-white font-mono">Privacy & Compliance Policy</h2>
-                <p className="text-xs text-slate-400">Last Updated: June 2026 • Detailed safeguards, compliance guidelines, and child safety specifications.</p>
+                <h2 className="text-2xl font-black text-white font-mono">Privacy & Safety Policy</h2>
+                <p className="text-xs text-slate-400">Last Updated: June 2026 • Detailed safeguards and child safety specifications.</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 {privacySections.map((sec) => (
                   <div 
                     key={sec.id}
-                    className={`p-6 rounded-2xl bg-[#111317]/80 border border-gray-800/60 hover:border-emerald-500/20 transition-all space-y-3 ${
-                      sec.id === 'p5' || sec.id === 'p6' || sec.id === 'p7' ? 'md:col-span-2 border-emerald-500/20 bg-emerald-950/5' : ''
-                    }`}
+                    className="p-6 rounded-2xl bg-[#111317]/80 border border-gray-800/60 hover:border-emerald-500/20 transition-all space-y-3"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 bg-slate-950 rounded-xl">
@@ -349,9 +295,6 @@ export default function TermsPage() {
                       </div>
                       <h3 className="text-sm font-black text-white font-mono flex items-center gap-2">
                         {sec.title}
-                        {sec.id === 'p5' && <span className="text-[9px] bg-teal-500/10 text-teal-400 px-2 py-0.5 rounded font-mono font-black uppercase">COPPA Guarded</span>}
-                        {sec.id === 'p6' && <span className="text-[9px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-mono font-black uppercase">GDPR Enforced</span>}
-                        {sec.id === 'p7' && <span className="text-[9px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded font-mono font-black uppercase">CCPA Certified</span>}
                       </h3>
                     </div>
                     <div className="text-xs text-slate-400 leading-relaxed font-medium font-sans pl-1">

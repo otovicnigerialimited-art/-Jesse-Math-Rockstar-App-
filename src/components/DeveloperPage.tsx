@@ -84,7 +84,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
     }
 
     if (!isAdult) {
-      setErrorMessage("Due to COPPA law and kids' privacy, individual players and students are not allowed to send messages in Jesse's guestbook. Only Adult or Teacher accounts can post.");
+      setErrorMessage("To protect children's safety and online privacy, individual players and students are not allowed to send messages in Jesse's guestbook. Only Adult or Teacher accounts can post.");
       setIsSubmitting(false);
       return;
     }
@@ -385,7 +385,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
                 <Lock className="w-8 h-8 text-amber-500 mx-auto animate-pulse" />
                 <h4 className="text-xs font-black text-white uppercase font-mono">Account Required</h4>
                 <p className="text-[10px] text-slate-400 leading-relaxed">
-                  You don't have an account yet, register one. Due to COPPA and kids' privacy rules, anonymous comments are strictly blocked.
+                  You don't have an account yet, register one. To safeguard children's privacy and ensure a safe experience, anonymous comments are strictly blocked.
                 </p>
               </div>
             ) : !isAdult ? (
@@ -393,7 +393,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
                 <ShieldAlert className="w-8 h-8 text-red-500 mx-auto animate-pulse" />
                 <h4 className="text-xs font-black text-white uppercase font-mono">Privacy Protection</h4>
                 <p className="text-[10px] text-slate-400 leading-relaxed">
-                  Due to COPPA laws and kids' privacy regulations, individual players or students cannot post comments here. Only Teacher or Adult accounts can leave public support messages.
+                  To protect children's safety and online privacy, individual players or students cannot post comments here. Only Teacher or Adult accounts can leave public support messages.
                 </p>
               </div>
             ) : (

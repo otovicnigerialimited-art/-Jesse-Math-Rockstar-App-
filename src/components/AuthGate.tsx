@@ -26,7 +26,11 @@ import {
   ShieldCheck,
   Server,
   Terminal,
-  Sparkles
+  Sparkles,
+  Github,
+  ExternalLink,
+  Globe,
+  BookOpen
 } from 'lucide-react';
 import jesseRockLogo from '../assets/images/jesse_rock_logo_1782041250458.jpg';
 import { db } from '../lib/firebase';
@@ -778,6 +782,9 @@ export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) 
                   </div>
                 </div>
               </div>
+
+
+
             </div>
 
           </div>

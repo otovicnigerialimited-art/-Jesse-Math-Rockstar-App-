@@ -8,7 +8,12 @@ import {
   Sparkles, 
   Lock, 
   ShieldCheck, 
-  GraduationCap
+  GraduationCap,
+  Github,
+  ExternalLink,
+  Globe,
+  BookOpen,
+  Terminal
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
@@ -208,6 +213,100 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
               A huge thank you to my <strong>Aunty Mercy</strong> for her amazing support, and a massive thank you to my <strong>Mum</strong> for letting me use her laptop to code all of my applications. I couldn't have built this without them!
             </p>
           </div>
+        </div>
+      </motion.section>
+
+      {/* 3.5. DEVELOPER PROFESSIONAL PROFILE SECTION */}
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="mx-auto w-full max-w-4xl p-8 rounded-[2.5rem] bg-slate-900/40 border border-white/10 backdrop-blur-md shadow-2xl relative"
+      >
+        <div className="absolute top-0 left-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-[50px] pointer-events-none" />
+        
+        <div className="text-left border-b border-white/5 pb-4 mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full text-[10px] font-black uppercase text-pink-400 tracking-wider mb-2">
+            <User size={12} /> VERIFIED CHANNELS
+          </div>
+          <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            Developer Professional Profile
+          </h2>
+          <p className="text-xs text-slate-450 font-mono mt-1">Explore Jesse Otobo's official open-source work, publications, and live systems.</p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <a 
+            href="https://github.com/otovicnigerialimited-art" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/40 hover:bg-slate-950/80 border border-white/5 hover:border-pink-500/30 transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-400 font-bold group-hover:scale-110 transition-transform">
+                <Github size={18} />
+              </div>
+              <div className="text-left">
+                <p className="text-[13px] font-bold text-slate-200 group-hover:text-pink-400 transition-colors">GitHub Art Repository</p>
+                <p className="text-[10px] text-slate-500 font-mono">@otovicnigerialimited-art</p>
+              </div>
+            </div>
+            <ExternalLink size={14} className="text-slate-500 group-hover:text-pink-400 transition-all group-hover:translate-x-0.5" />
+          </a>
+
+          <a 
+            href="https://dev.to/jesse_otobo_/how-i-built-deployed-and-google-indexed-a-full-stack-ai-app-in-under-24-hourspublished-true-h5g" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/40 hover:bg-slate-950/80 border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 font-bold group-hover:scale-110 transition-transform">
+                <BookOpen size={18} />
+              </div>
+              <div className="text-left max-w-[200px]">
+                <p className="text-[13px] font-bold text-slate-200 group-hover:text-cyan-400 transition-colors truncate">Full-Stack AI App Article</p>
+                <p className="text-[10px] text-slate-500 font-mono truncate">Dev.to • Build to Live Index</p>
+              </div>
+            </div>
+            <ExternalLink size={14} className="text-slate-500 group-hover:text-cyan-400 transition-all group-hover:translate-x-0.5" />
+          </a>
+
+          <a 
+            href="https://dev.to/jesse_otobo_" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/40 hover:bg-slate-950/80 border border-white/5 hover:border-indigo-500/30 transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold group-hover:scale-110 transition-transform">
+                <Terminal size={18} />
+              </div>
+              <div className="text-left">
+                <p className="text-[13px] font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">Jesse Otobo on Dev.to</p>
+                <p className="text-[10px] text-slate-500 font-mono">Developer Blog & Articles</p>
+              </div>
+            </div>
+            <ExternalLink size={14} className="text-slate-500 group-hover:text-indigo-400 transition-all group-hover:translate-x-0.5" />
+          </a>
+
+          <a 
+            href="https://jesse-math-rockstar-app.vercel.app/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/40 hover:bg-slate-950/80 border border-white/5 hover:border-amber-500/30 transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold group-hover:scale-110 transition-transform">
+                <Globe size={18} />
+              </div>
+              <div className="text-left">
+                <p className="text-[13px] font-bold text-slate-200 group-hover:text-amber-400 transition-colors">Live Math Rockstar App</p>
+                <p className="text-[10px] text-slate-500 font-mono">jesse-math-rockstar-app</p>
+              </div>
+            </div>
+            <ExternalLink size={14} className="text-slate-500 group-hover:text-amber-400 transition-all group-hover:translate-x-0.5" />
+          </a>
         </div>
       </motion.section>
 

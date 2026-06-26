@@ -13,7 +13,8 @@ import {
   ExternalLink,
   Globe,
   BookOpen,
-  Terminal
+  Terminal,
+  ShieldAlert
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
@@ -56,25 +57,33 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
     return () => unsubscribe();
   }, []);
 
+  const isGuest = !currentUser || currentUser.uid === 'guest' || currentUser.username === 'Genius Scholar' || currentUser.role === 'guest';
+  const isAdult = currentUser?.role === 'teacher' || currentUser?.role === 'admin';
+
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const isGuest = !currentUser || currentUser.uid === 'guest' || currentUser.username === 'Genius Scholar';
     if (isGuest) {
-      setErrorMessage("Please log in with a registered account to sign Jesse's guestbook!");
+      setErrorMessage("You don't have an account yet, register one");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!isAdult) {
+      setErrorMessage("Due to COPPA law and kids' privacy, individual players and students are not allowed to send messages in Jesse's guestbook. Only Adult or Teacher accounts can post.");
       setIsSubmitting(false);
       return;
     }
 
     try {
       await addDoc(collection(db, "developer_guestbook"), {
-        username: currentUser.username || "Verified Rockstar",
+        username: currentUser?.username || "Verified Rockstar",
         text: commentText.trim(),
         avatar: avatarIcon,
-        role: currentUser.role === 'teacher' || currentUser.role === 'admin' ? 'adult' : 'kid',
+        role: currentUser?.role === 'teacher' || currentUser?.role === 'admin' ? 'adult' : 'kid',
         timestamp: Date.now()
       });
       setCommentText('');
@@ -85,8 +94,6 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
       setIsSubmitting(false);
     }
   };
-
-  const isGuest = !currentUser || currentUser.uid === 'guest' || currentUser.username === 'Genius Scholar';
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 text-white space-y-12">
@@ -360,61 +367,69 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
             <p className="text-xs text-slate-400">Leave encouraging notes or feedback for Jesse!</p>
           </div>
 
-          {isGuest ? (
-            <div className="p-5 bg-[#14171c] border border-gray-800 rounded-2xl text-center space-y-2 font-sans">
-              <Lock className="w-8 h-8 text-amber-500 mx-auto animate-pulse" />
-              <h4 className="text-xs font-black text-white uppercase">Guestbook Locked</h4>
-              <p className="text-[10px] text-slate-400 leading-relaxed">
-                To protect Jesse's guestbook, signing is locked for guests. Please log in with a registered Rockstar, Student, or Teacher account to leave feedback!
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handlePostComment} className="p-5 bg-[#14171c] border border-gray-800 rounded-2xl space-y-4 font-sans">
-              <div className="flex gap-2 justify-center">
-                {['👑', '⚡', '🎸', '🏆', '🔥', '👾'].map((icon) => (
-                  <button
-                    key={icon}
-                    type="button"
-                    onClick={() => setAvatarIcon(icon)}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition-transform hover:scale-110 cursor-pointer ${
-                      avatarIcon === icon ? 'bg-pink-600 border border-pink-400' : 'bg-[#0d0f12] border border-gray-850'
-                    }`}
-                  >
-                    {icon}
-                  </button>
-                ))}
+            {isGuest ? (
+              <div className="p-5 bg-[#14171c] border border-gray-800 rounded-2xl text-center space-y-3 font-sans">
+                <Lock className="w-8 h-8 text-amber-500 mx-auto animate-pulse" />
+                <h4 className="text-xs font-black text-white uppercase font-mono">Account Required</h4>
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  You don't have an account yet, register one. Due to COPPA and kids' privacy rules, anonymous comments are strictly blocked.
+                </p>
               </div>
-
-              <div className="space-y-1.5">
-                <textarea
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Leave helpful feedback or words of support for Jesse..."
-                  maxLength={180}
-                  required
-                  className="w-full h-20 p-3 bg-[#0d0f12] border border-gray-800 rounded-xl text-xs text-white placeholder:text-slate-500 outline-none focus:border-pink-500 font-sans leading-relaxed"
-                />
-                <div className="flex justify-between text-[9px] text-slate-500 font-mono">
-                  <span>Logged as: <strong>{currentUser.username}</strong></span>
-                  <span>{commentText.length}/180</span>
-                </div>
+            ) : !isAdult ? (
+              <div className="p-5 bg-[#14171c] border border-gray-800 rounded-2xl text-center space-y-3 font-sans">
+                <ShieldAlert className="w-8 h-8 text-red-500 mx-auto animate-pulse" />
+                <h4 className="text-xs font-black text-white uppercase font-mono">Privacy Protection</h4>
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Due to COPPA laws and kids' privacy regulations, individual players or students cannot post comments here. Only Teacher or Adult accounts can leave public support messages.
+                </p>
               </div>
-
-              {errorMessage && (
-                <div className="p-2.5 bg-red-500/10 border border-red-500/25 rounded-xl text-[10px] text-red-400 font-medium">
-                  {errorMessage}
+            ) : (
+              <form onSubmit={handlePostComment} className="p-5 bg-[#14171c] border border-gray-800 rounded-2xl space-y-4 font-sans">
+                <div className="flex gap-2 justify-center">
+                  {['👑', '⚡', '🎸', '🏆', '🔥', '👾'].map((icon) => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setAvatarIcon(icon)}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition-transform hover:scale-110 cursor-pointer ${
+                        avatarIcon === icon ? 'bg-pink-600 border border-pink-400' : 'bg-[#0d0f12] border border-gray-850'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting || !commentText.trim()}
-                className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-mono font-black text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
-                <Send size={11} /> Send Support Message
-              </button>
-            </form>
-          )}
+                <div className="space-y-1.5">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Leave helpful feedback or words of support for Jesse..."
+                    maxLength={180}
+                    required
+                    className="w-full h-20 p-3 bg-[#0d0f12] border border-gray-800 rounded-xl text-xs text-white placeholder:text-slate-500 outline-none focus:border-pink-500 font-sans leading-relaxed"
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                    <span>Logged as: <strong>{currentUser?.username || 'Guest'}</strong></span>
+                    <span>{commentText.length}/180</span>
+                  </div>
+                </div>
+
+                {errorMessage && (
+                  <div className="p-2.5 bg-red-500/10 border border-red-500/25 rounded-xl text-[10px] text-red-400 font-medium">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !commentText.trim()}
+                  className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-mono font-black text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  <Send size={11} /> Send Support Message
+                </button>
+              </form>
+            )}
 
           {/* Comment Stream */}
           <div className="space-y-3 max-h-80 overflow-y-auto pr-1">

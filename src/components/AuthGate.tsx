@@ -210,16 +210,19 @@ export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) 
   };
 
   // Perform live real-time calculations based on active feature objects
-  const deployedBoost = features.filter(f => f.deployed).reduce((sum, f) => sum + f.valueBoost, 0);
-  const dynamicAssetValue = BASE_ASSET_VALUE + deployedBoost;
-  const dynamicNetWorth = BASE_NET_WORTH + deployedBoost;
+  const deployedBoost = (features || []).filter(f => f && f.deployed).reduce((sum, f) => sum + (f.valueBoost || 0), 0) || 0;
+  const dynamicAssetValue = (BASE_ASSET_VALUE || 0) + deployedBoost;
+  const dynamicNetWorth = (BASE_NET_WORTH || 0) + deployedBoost;
 
   // Donut chart stroke-dashoffset calculation
-  const maxPossibleBoost = features.reduce((sum, f) => sum + f.valueBoost, 0);
+  const maxPossibleBoost = (features || []).reduce((sum, f) => sum + (f.valueBoost || 0), 0) || 0;
   const engagementPercentage = maxPossibleBoost > 0 ? Math.round((deployedBoost / maxPossibleBoost) * 100) : 0;
-  const radius = 50;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (engagementPercentage / 100) * circumference;
+  const radius = 38;
+  const circumference = 238.76;
+  const strokeDashoffset = isNaN(dynamicAssetValue) ? 238.76 : (238.76 - (238.76 * ((dynamicAssetValue || 0) / 12000)));
+
+  // Fallback for computedGrowthPercent to keep app lightning fast on mobile viewports
+  const computedGrowthPercent = maxPossibleBoost > 0 ? Math.round((deployedBoost / (maxPossibleBoost || 1)) * 100) : 0;
 
   // Developer Login submission handler
   const handleDevLoginSubmit = (e: React.FormEvent) => {
@@ -730,33 +733,32 @@ export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) 
 
                 {/* Donut Chart SVG */}
                 <div className="relative w-40 h-40 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     {/* Background Circle */}
                     <circle
-                      cx="60"
-                      cy="60"
-                      r={radius}
+                      cx="50"
+                      cy="50"
+                      r="38"
                       fill="transparent"
                       stroke="rgba(255,255,255,0.05)"
-                      strokeWidth="10"
+                      strokeWidth="7"
                     />
                     {/* Progress Circle with calculated dynamic offsets */}
-                    <motion.circle
-                      cx="60"
-                      cy="60"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#06b6d4"
-                      strokeWidth="10"
-                      strokeDasharray={circumference}
-                      animate={{ strokeDashoffset }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                      strokeLinecap="round"
+                    <circle 
+                      cx="50" 
+                      cy="50" 
+                      r="38" 
+                      stroke="#3b82f6" 
+                      strokeWidth="7" 
+                      fill="transparent" 
+                      strokeDasharray="238.76" 
+                      strokeDashoffset={isNaN(dynamicAssetValue) ? 238.76 : (238.76 - (238.76 * (dynamicAssetValue / 12000)))}
+                      className="transition-all duration-1000 ease-out"
                     />
                   </svg>
                   {/* Inside Center Text */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-black text-white font-mono">{engagementPercentage}%</span>
+                    <span className="text-3xl font-black text-white font-mono">{engagementPercentage || 0}%</span>
                     <span className="text-[9px] font-mono text-slate-400 font-black uppercase">DEPLOYED</span>
                   </div>
                 </div>

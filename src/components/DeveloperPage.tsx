@@ -2,41 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, 
-  Terminal, 
-  Award, 
   Heart, 
   Send, 
-  Calendar, 
   Rocket, 
-  ShieldCheck, 
   Sparkles, 
-  FolderGit2, 
-  Github, 
-  Cpu,
-  Star
+  Lock, 
+  ShieldCheck, 
+  GraduationCap
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-
-import PlayerSignIns from './PlayerSignIns';
 
 interface DeveloperPageProps {
   currentUser: { uid: string; username: string; role?: string };
 }
 
 export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
+  // Guestbook states
   const [commentText, setCommentText] = useState('');
-  const [avatarIcon, setAvatarIcon] = useState('🎸');
+  const [avatarIcon, setAvatarIcon] = useState('👑');
   const [guestbookLogs, setGuestbookLogs] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [role, setRole] = useState<'kid' | 'adult'>('kid');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Load Developer guestbook comments from Firestore
+  // Load real-time guestbook comments on mount
   useEffect(() => {
     const q = query(
       collection(db, "developer_guestbook"),
       orderBy("timestamp", "desc"),
-      limit(25)
+      limit(30)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -46,11 +40,11 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
       });
       setGuestbookLogs(logs);
     }, (err) => {
-      console.warn("Guestbook loading fallback/offline:", err);
-      // Fallback comments if Offline or Permission denied before rules update
+      console.warn("[GUESTBOOK] Loading offline/mock sync:", err);
+      // Fallback fallback mock comments
       setGuestbookLogs([
-        { id: 'fb1', username: 'Alex Multiplier', text: 'Jesse, this application is elite! The play battles are so slick.', avatar: '🎯', role: 'kid', timestamp: Date.now() - 3600000 },
-        { id: 'fb2', username: 'TableTitan', text: 'I love how times table accuracy increases XP. Thank you Jesse Otobo!', avatar: '⚡', role: 'adult', timestamp: Date.now() - 7200000 }
+        { id: 'mock1', username: 'Alex Multiplier', text: 'Jesse, this application is elite! The play battles are so slick.', avatar: '🎯', role: 'kid', timestamp: Date.now() - 3600000 },
+        { id: 'mock2', username: 'TableTitan', text: 'I love how times table accuracy increases XP. Thank you Jesse Otobo!', avatar: '⚡', role: 'adult', timestamp: Date.now() - 7200000 }
       ]);
     });
 
@@ -60,108 +54,62 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-
     setIsSubmitting(true);
+    setErrorMessage(null);
+
+    const isGuest = !currentUser || currentUser.uid === 'guest' || currentUser.username === 'Genius Scholar';
+    if (isGuest) {
+      setErrorMessage("Please log in with a registered account to sign Jesse's guestbook!");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await addDoc(collection(db, "developer_guestbook"), {
-        uid: currentUser.uid,
-        username: currentUser.username || "Local Guest Genius",
+        username: currentUser.username || "Verified Rockstar",
         text: commentText.trim(),
         avatar: avatarIcon,
-        role: role,
+        role: currentUser.role === 'teacher' || currentUser.role === 'admin' ? 'adult' : 'kid',
         timestamp: Date.now()
       });
       setCommentText('');
-    } catch (err) {
-      console.error("Failed to post comment:", err);
+    } catch (err: any) {
+      console.error("Error writing comment to database:", err);
+      setErrorMessage("Could not post comment. Please check your internet connection.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const timelineSteps = [
-    {
-      age: "Age 8",
-      title: "First Lines & Visual Block Coding",
-      desc: "Discovered programming logic through visual block-based layouts. Built interactive logic layouts, dynamic 2D games, and knew immediately that software craftsmanship was my future!"
-    },
-    {
-      age: "Age 9",
-      title: "Advancing to Text-Based Logic",
-      desc: "Began studying Python logic constructs and HTML foundations. Created educational math questions for school peers and experimented with custom command interpreters."
-    },
-    {
-      age: "Age 10",
-      title: "Vibe Coding Breakthrough",
-      desc: "Discovered the revolution of vibe coding! Rather than standard syntax textbooks, I self-taught prompting logic, API connectivity, and code design techniques, testing 50+ experimental web tools."
-    },
-    {
-      age: "Age 11",
-      title: "Launching Jesse Rock Math App",
-      desc: "Successfully engineered and compiled my flagship educational multiplayer hub, powered by real-time Firestore synchronization and modern responsive React workflows!"
-    }
-  ];
+  const isGuest = !currentUser || currentUser.uid === 'guest' || currentUser.username === 'Genius Scholar';
 
   return (
-    <div className="space-y-12 py-4">
-      {/* Page Header */}
-      <div className="text-center md:text-left space-y-3 max-w-2xl">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-xs font-black uppercase text-violet-400 tracking-wider">
-          <User size={12} /> MEAT THE ARCHITECT
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 text-white space-y-12">
+      
+      {/* 1. HERO HEADER */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center space-y-4 max-w-3xl mx-auto"
+      >
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full text-xs font-black uppercase text-pink-400 tracking-wider">
+          <Sparkles size={13} className="animate-spin-slow" /> MEET THE BRAIN BEHIND THE GAME
         </div>
-        <h1 className="text-4xl md:text-5xl font-display font-black text-white tracking-tight">
-          About the <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Developer</span>
+        <h1 className="text-4xl sm:text-5xl font-display font-black tracking-tight leading-none mt-2">
+          MEET THE <span className="bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 bg-clip-text text-transparent">DEVELOPER</span>
         </h1>
-        <p className="text-slate-400 text-sm leading-relaxed">
-          Unlock the story of 11-year-old software architect Jesse Otobo. From initial visual block layouts at age 8 to launching comprehensive full-scale React platforms.
+        <p className="text-sm sm:text-base text-slate-350 max-w-2xl mx-auto font-medium leading-relaxed">
+          Jesse Rock Math Arena was designed, coded, and deployed by an 11-year-old coding rockstar. Learn about Jesse's journey and leave an encouraging word below!
         </p>
-      </div>
+      </motion.div>
 
-      {/* Developer Hero Card */}
-      <div className="p-8 md:p-12 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-950 border border-white/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-60 h-60 bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
-          {/* Virtual avatar badge */}
-          <div className="w-28 h-28 sm:w-36 sm:w-36 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 p-2 shrink-0 flex items-center justify-center shadow-xl shadow-violet-500/20">
-            <div className="w-full h-full rounded-full bg-slate-950 flex flex-col items-center justify-center text-4xl sm:text-5xl border border-white/10 select-none">
-              👑
-            </div>
-          </div>
-
-          <div className="space-y-4 text-center md:text-left">
-            <div>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-                <h2 className="text-2xl sm:text-3xl font-black text-white">Jesse Otobo</h2>
-                <span className="px-2.5 py-0.5 bg-violet-100/10 border border-violet-500/20 rounded text-[11px] font-extrabold text-violet-400 uppercase tracking-widest leading-none">
-                  Vibe Rockstar
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 uppercase font-black tracking-wider mt-1">Founder & Chief Educational Engineer, Age 11</p>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed font-medium max-w-xl">
-              "We Are Young Genius is my philosophy. I wanted to design a game that challenges kids to level up their core multiplication speeds without administrative sign-up blockades. Built with React 18, Tailwind, and real-time Firebase databases!"
-            </p>
-
-            <div className="flex flex-wrap justify-center md:justify-start gap-3">
-              <span className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/5 font-mono text-[10px] text-slate-350">
-                🚀 Projects: <strong>50+ experimental</strong>
-              </span>
-              <span className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/5 font-mono text-[10px] text-slate-350">
-                💻 Focus: <strong>Vibe Coding Logic</strong>
-              </span>
-              <span className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/5 font-mono text-[10px] text-slate-350">
-                🛠️ Stack: <strong>React, Vite, Firestore</strong>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* DEV.to Featured Article Card */}
-      <div className="p-8 md:p-10 rounded-[2.5rem] bg-slate-900/50 border border-emerald-500/30 shadow-lg shadow-emerald-500/5 relative overflow-hidden max-w-4xl mx-auto">
+      {/* 2. FEATURED ARTICLE CARD */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1 }}
+        className="p-8 md:p-10 rounded-[2.5rem] bg-[#14171c] border border-emerald-500/30 shadow-lg shadow-emerald-500/5 relative overflow-hidden max-w-4xl mx-auto"
+      >
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 justify-between">
           <div className="space-y-4 text-center md:text-left">
@@ -172,7 +120,7 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
               How I Built, Deployed, and Google-Indexed a Full-Stack AI App in Under 24 Hours
             </h3>
             <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
-              Curious about the behind-the-scenes magic? In this popular engineering article, 11-year-old developer Jesse Otobo explains how he designed the real-time matchmaking, integrated firestore state systems, set up production cloud environments, and achieved instantaneous Google indexation in less than a single day!
+              In this acclaimed article, 11-year-old software pioneer Jesse Otobo explains how he designed high-speed client lobbies, integrated firestore real-time state, and achieved top Google indexation in less than 24 hours!
             </p>
             <div className="flex flex-wrap justify-center md:justify-start gap-2.5">
               <span className="px-2.5 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 font-mono text-[9px] text-emerald-300 font-bold uppercase">
@@ -197,128 +145,140 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
             </a>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Styled Founder Story Section as requested */}
-      <section 
-        id="founder-story" 
-        style={{
-          backgroundColor: "#0b132b", 
-          color: "#fff", 
-          padding: "40px 20px", 
-          borderRadius: "15px", 
-          marginTop: "30px", 
-          marginBottom: "30px",
-          maxWidth: "800px", 
-          fontFamily: "'Segoe UI', sans-serif", 
-          boxShadow: "0 8px 24px rgba(0,0,0,0.6)", 
-          border: "3px solid #ff0055"
-        }}
-        className="mx-auto w-full"
+      {/* 3. FOUNDER BIOGRAPHY SECTION */}
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mx-auto w-full max-w-4xl p-8 rounded-[2.5rem] bg-[#0b132b] border-2 border-pink-500 shadow-xl shadow-pink-500/10 text-white relative"
       >
-        <style>{`
-          .neon-text {
-              font-size: 1.5rem;
-              font-weight: bold;
-              text-transform: uppercase;
-              letter-spacing: 2px;
-              color: #fff;
-              text-shadow: 0 0 5px #fff, 0 0 10px #ff0055, 0 0 20px #ff0055, 0 0 40px #ff0055;
-              animation: neon-pulse 1.5s infinite alternate;
-              margin: 15px 0 0 0;
-          }
-          @keyframes neon-pulse {
-              from { text-shadow: 0 0 5px #fff, 0 0 10px #ff0055, 0 0 20px #ff0055, 0 0 40px #ff0055; }
-              to { text-shadow: 0 0 2px #fff, 0 0 5px #00d2ff, 0 0 10px #00d2ff, 0 0 20px #00d2ff, 0 0 30px #00d2ff; }
-          }
-        `}</style>
+        <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/5 rounded-full blur-[60px] pointer-events-none" />
         
-        <div style={{ textAlign: "center", marginBottom: "30px" }}>
-          <h2 style={{ fontSize: "2.5rem", color: "#00d2ff", textShadow: "0 0 10px #00d2ff", margin: "0 0 10px 0" }}>👑 Meet the Founder</h2>
-          <p className="neon-text">"We Are Young Genius" 👑</p>
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-pink-600/20 border border-pink-500 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-3 shadow-[0_0_15px_rgba(236,72,153,0.3)]">
+            👑
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black text-[#00d2ff] tracking-tight">Meet the Founder</h2>
+          <div className="text-sm font-bold uppercase tracking-widest text-pink-400 font-mono mt-2 animate-pulse">
+            "We Are Young Genius" 👑
+          </div>
         </div>
 
-        <div style={{ lineHeight: "1.8", fontSize: "1.1rem", color: "#e0e0e0" }} className="space-y-4">
-          <p>Hello! I am Jesse, the founder of Jesse Rock Math, an application designed to help children enjoy practicing mathematics.</p>
+        <div className="space-y-6 text-sm leading-relaxed text-slate-200 font-sans">
+          <p className="text-base font-medium">Hello! I am Jesse, the founder of Jesse Rock Math, an application designed to help children enjoy practicing mathematics.</p>
           
-          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🎸 The Inspiration</h3>
-          <p>Inspired to make education engaging, I created a unique platform to help peers improve their skills.</p>
+          <div className="space-y-2">
+            <h3 className="text-lg font-black text-pink-500 border-b border-[#00d2ff] pb-1 flex items-center gap-1.5">
+              🎸 The Inspiration
+            </h3>
+            <p>
+              I got inspired to create a unique platform that makes education extremely engaging and fun. By combining gaming elements with mathematics, my friends and peers can practice math and naturally improve their speed and accuracy.
+            </p>
+          </div>
 
-          <h3 style={{ color: "#ff0055", marginTop: "25px", borderBottom: "2px solid #00d2ff", paddingBottom: "5px" }}>🚀 The Evolution: From Blocks to Advanced Coding</h3>
-          <p>I started coding at age 8, using visual, block-based tools to learn programming logic. Over time, I transitioned to advanced technologies through self-directed learning and experimentation.</p>
+          <div className="space-y-2">
+            <h3 className="text-lg font-black text-pink-500 border-b border-[#00d2ff] pb-1 flex items-center gap-1.5">
+              🚀 The Evolution: From Blocks to Advanced Coding
+            </h3>
+            <p>
+              I started coding at age 8, using visual, block-based tools like Scratch to understand logical statements, loops, and conditions. Over time, I grew passionate about building software and transitioned to full text-based coding, mastering responsive frontends, Firestore real-time databases, and full-stack integrations.
+            </p>
+          </div>
 
-          <h3 style={{ color: "#00d2ff", marginTop: "25px", borderBottom: "2px solid #ff0055", paddingBottom: "5px" }}>🛠️ The Developer Tech Stack</h3>
-          <p>After creating and testing over 50 applications, I mastered API handling, backend management, and AI prompting. For this project, I utilize:</p>
-          <ul style={{ listStyleType: "disc", marginLeft: "20px", color: "#fff" }} className="pl-4 space-y-1">
-            <li><strong>AI Core:</strong> Advanced artificial intelligence models.</li>
-            <li><strong>Version Control:</strong> Secure, cloud-based repositories.</li>
-            <li><strong>Cloud Deployment:</strong> High-performance, edge-network hosting.</li>
-          </ul>
+          <div className="space-y-2">
+            <h3 className="text-lg font-black text-[#00d2ff] border-b border-pink-500 pb-1 flex items-center gap-1.5">
+              🛠️ The Developer Tech Stack
+            </h3>
+            <p>After creating and testing over 50 applications, I mastered advanced web structures, real-time sync systems, and hosting deployments. For this project, I utilize:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-slate-300 font-medium">
+              <li><strong>UI Framework:</strong> Modern React with TypeScript and Vite.</li>
+              <li><strong>Styling engine:</strong> Tailwind CSS utility classes with native animation support.</li>
+              <li><strong>Database Layer:</strong> Firestore real-time state listeners.</li>
+              <li><strong>Cloud Deployment:</strong> Secure server routing with CORS supervision.</li>
+            </ul>
+          </div>
 
-          <div style={{ color: "#00d2ff", marginTop: "30px", background: "rgba(255, 0, 85, 0.1)", padding: "15px", borderRadius: "8px", borderLeft: "4px solid #ff0055" }}>
-            <h3 style={{ margin: "0 0 10px 0", color: "#00d2ff", fontWeight: "bold" }}>💖 Special Thanks & Credits</h3>
-            <p style={{ margin: 0, color: "#e0e0e0" }}>A huge thank you to my <strong>Aunty Mercy</strong> for her amazing support, and a massive thank you to my <strong>Mum</strong> for letting me use her laptop to code all of my applications. I couldn't have built this without them!</p>
+          <div className="bg-pink-500/10 p-5 rounded-2xl border-l-4 border-pink-500 text-slate-100">
+            <h3 className="text-sm font-bold text-[#00d2ff] mb-2 uppercase tracking-wider flex items-center gap-1.5">
+              <Heart size={14} className="text-pink-500 animate-pulse" /> Special Thanks & Credits
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              A huge thank you to my <strong>Aunty Mercy</strong> for her amazing support, and a massive thank you to my <strong>Mum</strong> for letting me use her laptop to code all of my applications. I couldn't have built this without them!
+            </p>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-
-      {/* Grid: Timeline and Interactive Guestbook */}
-      <div className="grid lg:grid-cols-12 gap-8">
-        {/* Left Side: Timeline (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
+      {/* 4. TIMELINE AND GUESTBOOK GRID */}
+      <div className="grid lg:grid-cols-12 gap-8 max-w-4xl mx-auto">
+        
+        {/* Left: Timeline */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="lg:col-span-7 space-y-6"
+        >
           <div className="space-y-1">
-            <h3 className="text-lg font-black text-white uppercase tracking-wider">The Professional Timeline</h3>
-            <p className="text-xs text-slate-500 font-medium">From simple blocks to beautiful, high-speed interactive portals</p>
+            <h3 className="text-lg font-mono font-black text-white uppercase tracking-wider">Jesse's Timeline</h3>
+            <p className="text-xs text-slate-400">From block foundations to full-stack applications</p>
           </div>
 
-          <div className="relative pl-6 border-l border-white/5 space-y-8">
-            {timelineSteps.map((step, idx) => (
+          <div className="relative pl-5 border-l border-pink-500/30 space-y-6 font-sans">
+            {[
+              { age: "Age 8", title: "First Lines & Block Coding", desc: "Discovered programming logic through visual layouts, building 2D logic games." },
+              { age: "Age 9", title: "Advancing to Text-Based Logic", desc: "Studied HTML/CSS constructs, creating educational mini-challenges for peers." },
+              { age: "Age 10", title: "Vibe Coding Breakthrough", desc: "Mastered conversational prompting and API hooks, generating over 50+ experimental tools." },
+              { age: "Age 11", title: "Launching Jesse Rock Math App", desc: "Designed, synchronized, and compiled this flagship multiplayer hub!" }
+            ].map((step, idx) => (
               <div key={idx} className="relative">
-                {/* Visual marker dot */}
-                <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-slate-950 border-2 border-violet-500 flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 bg-violet-400 rounded-full" />
+                <div className="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-[#0d0f12] border-2 border-[#00d2ff] flex items-center justify-center">
+                  <span className="w-1.5 h-1.5 bg-[#00d2ff] rounded-full" />
                 </div>
-                
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-black uppercase text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/25 tracking-widest font-mono">
+                <div className="space-y-1 pl-2">
+                  <span className="text-[9px] font-mono font-black uppercase text-[#00d2ff] bg-[#00d2ff]/10 border border-[#00d2ff]/20 px-1.5 py-0.5 rounded leading-none">
                     {step.age}
                   </span>
-                  <h4 className="text-base font-black text-white">{step.title}</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed font-semibold">
-                    {step.desc}
-                  </p>
+                  <h4 className="text-sm font-black text-white mt-1">{step.title}</h4>
+                  <p className="text-xs text-slate-350 leading-relaxed">{step.desc}</p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Right Side: Interactive Guestbook (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        {/* Right: Guestbook */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="lg:col-span-5 space-y-6"
+        >
           <div className="space-y-1">
-            <h3 className="text-lg font-black text-white uppercase tracking-wider">Sign Jesse's Guestbook</h3>
-            <p className="text-xs text-slate-500 font-medium">Leave support matches, notes of encouragement, or ratings!</p>
+            <h3 className="text-lg font-mono font-black text-white uppercase tracking-wider">Jesse's Guestbook</h3>
+            <p className="text-xs text-slate-400">Leave encouraging notes or feedback for Jesse!</p>
           </div>
 
-          {currentUser.role !== 'teacher' && currentUser.role !== 'admin' ? (
-            <div className="p-6 bg-slate-900/35 border border-white/5 rounded-3xl text-center space-y-3">
-              <ShieldCheck className="w-10 h-10 text-slate-500 mx-auto" />
-              <h4 className="text-sm font-black text-white uppercase">Guestbook Locked</h4>
-              <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                To keep our Young Genius scholars safe and prevent the sharing of sensitive information, signing the Guestbook is restricted. Only verified Teacher accounts can leave notes of encouragement for Jesse.
+          {isGuest ? (
+            <div className="p-5 bg-[#14171c] border border-gray-800 rounded-2xl text-center space-y-2 font-sans">
+              <Lock className="w-8 h-8 text-amber-500 mx-auto animate-pulse" />
+              <h4 className="text-xs font-black text-white uppercase">Guestbook Locked</h4>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                To protect Jesse's guestbook, signing is locked for guests. Please log in with a registered Rockstar, Student, or Teacher account to leave feedback!
               </p>
             </div>
           ) : (
-            <form onSubmit={handlePostComment} className="p-6 bg-slate-900/35 border border-white/5 rounded-3xl space-y-4">
-              <div className="flex gap-2">
-                {['🎸', '⚡', '👑', '🔥', '🏆', '👾'].map((icon) => (
+            <form onSubmit={handlePostComment} className="p-5 bg-[#14171c] border border-gray-800 rounded-2xl space-y-4 font-sans">
+              <div className="flex gap-2 justify-center">
+                {['👑', '⚡', '🎸', '🏆', '🔥', '👾'].map((icon) => (
                   <button
                     key={icon}
                     type="button"
                     onClick={() => setAvatarIcon(icon)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-transform hover:scale-110 cursor-pointer ${
-                      avatarIcon === icon ? 'bg-violet-600 border border-violet-400' : 'bg-slate-950 border border-white/5'
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition-transform hover:scale-110 cursor-pointer ${
+                      avatarIcon === icon ? 'bg-pink-600 border border-pink-400' : 'bg-[#0d0f12] border border-gray-850'
                     }`}
                   >
                     {icon}
@@ -326,86 +286,72 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
                 ))}
               </div>
 
-              {/* Role Selector */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
-                  Are you a:
-                </span>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setRole('adult')}
-                    className={`py-2 px-3 rounded-xl border text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      role === 'adult'
-                        ? 'bg-[#ff0055]/10 border-[#ff0055] text-[#ff0055] shadow-sm shadow-[#ff0055]/20 scale-[1.02]'
-                        : 'bg-slate-950 border-white/5 text-slate-400 hover:text-slate-355'
-                    }`}
-                  >
-                    <span>🍎 Teacher</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Write helpful text, practice milestones, or positive suggestions for Jesse..."
+                  placeholder="Leave helpful feedback or words of support for Jesse..."
                   maxLength={180}
                   required
-                  className="w-full h-24 p-4 bg-slate-950 border border-white/5 rounded-2xl text-xs text-white placeholder:text-slate-650 outline-none focus:border-violet-500 font-semibold"
+                  className="w-full h-20 p-3 bg-[#0d0f12] border border-gray-800 rounded-xl text-xs text-white placeholder:text-slate-500 outline-none focus:border-pink-500 font-sans leading-relaxed"
                 />
-                <div className="flex items-center justify-between text-[10px] text-slate-550 font-bold">
-                  <span>Active handle: <strong className="text-slate-300">{currentUser.username || "Local Player"}</strong></span>
-                  <span>{commentText.length}/180 chars</span>
+                <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                  <span>Logged as: <strong>{currentUser.username}</strong></span>
+                  <span>{commentText.length}/180</span>
                 </div>
               </div>
+
+              {errorMessage && (
+                <div className="p-2.5 bg-red-500/10 border border-red-500/25 rounded-xl text-[10px] text-red-400 font-medium">
+                  {errorMessage}
+                </div>
+              )}
 
               <button
                 type="submit"
                 disabled={isSubmitting || !commentText.trim()}
-                className="w-full py-3.5 btn-3d-pink text-white text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-mono font-black text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
-                <Send size={12} /> Post Word of Encouragement
+                <Send size={11} /> Send Support Message
               </button>
             </form>
           )}
 
-          {/* Render comment outputs from Firestore */}
-          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-            {guestbookLogs.map((log) => (
-              <div 
-                key={log.id}
-                className="p-4 rounded-2xl bg-slate-950 border border-white/5 flex gap-3 flex-col sm:flex-row"
-              >
-                <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-lg shrink-0">
-                  {log.avatar || '⚡'}
-                </div>
-                <div className="space-y-1 w-full">
-                  <div className="flex items-center justify-between gap-2.5 flex-wrap">
-                    <span className="text-xs font-black text-slate-200 flex items-center gap-1.5 flex-wrap">
+          {/* Comment Stream */}
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {guestbookLogs.length === 0 ? (
+              <p className="text-xs text-slate-500 text-center italic py-4">Be the first to leave a message!</p>
+            ) : (
+              guestbookLogs.map((log) => (
+                <div 
+                  key={log.id}
+                  className="p-3.5 rounded-xl bg-[#14171c] border border-gray-850 flex gap-2 flex-col font-sans"
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-gray-850 pb-1.5">
+                    <span className="text-[11px] font-black text-slate-200 flex items-center gap-1.5">
+                      <span className="text-sm">{log.avatar || '👑'}</span>
                       <span>{log.username}</span>
-                      {log.role === 'kid' && (
-                        <span className="px-1.5 py-0.5 bg-[#00d2ff] text-slate-950 text-[8px] font-black rounded-md tracking-wider inline-flex items-center gap-0.5 shadow-sm">
-                          🎮 KID
+                      {log.role === 'adult' ? (
+                        <span className="px-1.5 bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[7px] font-mono font-black rounded uppercase py-0.5 leading-none">
+                          TEACHER
                         </span>
-                      )}
-                      {log.role === 'adult' && (
-                        <span className="px-1.5 py-0.5 bg-[#ff0055] text-white text-[8px] font-black rounded-md tracking-wider inline-flex items-center gap-0.5 shadow-sm">
-                          🍎 ADULT
+                      ) : (
+                        <span className="px-1.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[7px] font-mono font-black rounded uppercase py-0.5 leading-none">
+                          ROCKSTAR
                         </span>
                       )}
                     </span>
-                    <span className="text-[9px] text-slate-550 font-mono">
-                      {new Date(log.timestamp).toLocaleDateString()}
+                    <span className="text-[8px] text-slate-500 font-mono">
+                      {log.timestamp ? new Date(log.timestamp).toLocaleDateString() : 'Just now'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 font-medium leading-normal">{log.text}</p>
+                  <p className="text-xs text-slate-350 font-medium leading-relaxed">{log.text}</p>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-        </div>
+        </motion.div>
+
       </div>
     </div>
   );

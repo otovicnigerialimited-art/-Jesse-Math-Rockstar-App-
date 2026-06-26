@@ -60,6 +60,17 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
   const isGuest = !currentUser || currentUser.uid === 'guest' || currentUser.username === 'Genius Scholar' || currentUser.role === 'guest';
   const isAdult = currentUser?.role === 'teacher' || currentUser?.role === 'admin';
 
+  const sanitizeGuestbookText = (text: string): string => {
+    return text
+      .trim()
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#x27;")
+      .replace(/\//g, "&#x2F;");
+  };
+
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
@@ -78,10 +89,12 @@ export default function DeveloperPage({ currentUser }: DeveloperPageProps) {
       return;
     }
 
+    const sanitizedComment = sanitizeGuestbookText(commentText);
+
     try {
       await addDoc(collection(db, "developer_guestbook"), {
         username: currentUser?.username || "Verified Rockstar",
-        text: commentText.trim(),
+        text: sanitizedComment,
         avatar: avatarIcon,
         role: currentUser?.role === 'teacher' || currentUser?.role === 'admin' ? 'adult' : 'kid',
         timestamp: Date.now()

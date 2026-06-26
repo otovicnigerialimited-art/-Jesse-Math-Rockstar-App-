@@ -20,6 +20,12 @@ service cloud.firestore {
       allow read, write: if true; // Needs to remain publicly read/writable for client-side claim validation
     }
 
+    // 1.5. Explicit Leaderboard collection (User defined)
+    match /leaderboard/{document} {
+      allow read: if true;
+      allow write: if request.auth != null; // Only logged-in users
+    }
+
     // 2. Users collection (Global leaderboard and profiles)
     match /users/{userId} {
       // "allow anyone to read the global leaderboard collection"

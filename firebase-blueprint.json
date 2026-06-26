@@ -38,6 +38,18 @@
         "username": { "type": "string" }
       },
       "required": ["username"]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "An entry on the explicit leaderboard collection",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "score": { "type": "number" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["username", "score"]
     }
   },
   "firestore": {
@@ -45,6 +57,7 @@
     "/users/{userId}": { "schema": "User", "description": "Users collection" },
     "/schools/{schoolId}": { "schema": "School", "description": "Schools collection" },
     "/teachers/{teacherId}": { "schema": "Teacher", "description": "Teachers collection" },
-    "/students/{studentId}": { "schema": "Student", "description": "Students collection" }
+    "/students/{studentId}": { "schema": "Student", "description": "Students collection" },
+    "/leaderboard/{document}": { "schema": "LeaderboardEntry", "description": "Leaderboard collection" }
   }
 }

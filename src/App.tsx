@@ -142,6 +142,21 @@ export default function App() {
     const realName = localStorage.getItem('jesse_rock_real_name');
     const userId = localStorage.getItem('jesse_rock_user_id');
 
+    // Notify backend to establish the server-verified secure session cookie
+    try {
+      await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId || deviceId,
+          username: uname,
+          role: role
+        })
+      });
+    } catch (cookieErr) {
+      console.warn("Could not synchronize secure HttpOnly cookie session with server:", cookieErr);
+    }
+
     if (role !== 'individual') {
       setAuthState({
         isAuthenticated: true,
@@ -331,6 +346,13 @@ export default function App() {
     localStorage.removeItem('jesse_rock_class_name');
     localStorage.removeItem('jesse_rock_real_name');
     localStorage.removeItem('jesse_rock_user_id');
+
+    // Notify backend to clear the secure session cookie
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (logoutErr) {
+      console.warn("Could not clear secure HttpOnly session cookie on the server:", logoutErr);
+    }
 
     const freshDeviceId = 'user_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
     localStorage.setItem('jesse_rock_device_id', freshDeviceId);

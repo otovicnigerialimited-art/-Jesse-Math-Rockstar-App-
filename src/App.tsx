@@ -944,7 +944,7 @@ export default function App() {
             )}
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
+          <nav className="flex-1 space-y-1 overflow-y-auto pr-1 scrollbar-thin-custom">
             {navItems.map((item) => (
               <button
                 key={item.id}

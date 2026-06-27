@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Timer, Zap, ArrowRight, RefreshCcw, Home, Flame } from 'lucide-react';
 import { generateProblem, calculateXP } from '../lib/mathUtils';
+import { playCorrectSound, playWrongSound } from '../lib/audioUtils';
 import { Difficulty, Problem, UserStats } from '../types';
 import { cn } from '../lib/utils';
 import confetti from 'canvas-confetti';
@@ -51,6 +52,7 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
       setScore(prev => prev + 1);
       setStreak(prev => prev + 1);
       setFeedback('correct');
+      playCorrectSound();
 
       const funnyTaglines = [
         "🧠 Brainpower Overdrive!",
@@ -76,6 +78,7 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
     } else {
       setStreak(0);
       setFeedback('wrong');
+      playWrongSound();
     }
 
     setTimeout(() => {

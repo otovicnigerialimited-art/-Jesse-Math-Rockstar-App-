@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Brain, Settings, Trophy, Flame, Play, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { Difficulty, Problem } from '../types';
 import { generateProblem, calculateXP } from '../lib/mathUtils';
+import { playCorrectSound, playWrongSound } from '../lib/audioUtils';
 import { cn } from '../lib/utils';
 
 interface LearnArenaProps {
@@ -76,6 +77,9 @@ export default function LearnArena({ onExit, onFinish }: LearnArenaProps) {
     const nextScore = score + (isCorrect ? 1 : 0);
     if (isCorrect) {
       setScore(s => s + 1);
+      playCorrectSound();
+    } else {
+      playWrongSound();
     }
     
     setUserAnswers(prev => [...prev, {

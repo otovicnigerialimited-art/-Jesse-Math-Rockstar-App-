@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Timer, Zap, ArrowRight, RefreshCcw, LogOut, ArrowLeft, Loader2, Search } from 'lucide-react';
+import { Trophy, Timer, Zap, ArrowRight, RefreshCcw, LogOut, ArrowLeft, Loader2, Search, Volume2, VolumeX } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { generateArenaQuestions } from '../lib/mathUtils';
+import { playCorrectSound, playWrongSound, setGlobalMuted } from '../lib/audioUtils';
 import { cn } from '../lib/utils';
 import confetti from 'canvas-confetti';
 
@@ -48,9 +49,11 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
   const [onlineUsersCount, setOnlineUsersCount] = useState(0);
   const [isCanceled, setIsCanceled] = useState(false);
   const [onlinePlayers, setOnlinePlayers] = useState<any[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const queueDocRef = doc(db, "matchmaking_queue", currentUser.uid);
 
@@ -133,6 +136,10 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
 
   // Start searching logic
   const handleStartMatchmaking = async () => {
+    if (audioRef.current && !isMuted) {
+      audioRef.current.play().catch(() => {});
+    }
+
     setIsCanceled(false);
     setGameState('searching');
     setQuestionIndex(0);
@@ -331,10 +338,13 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
       setActiveFeedbackTag(randomTag);
 
       if (soundEffectsEnabled) {
-        // play small notification
+        playCorrectSound();
       }
     } else {
       setFeedback('wrong');
+      if (soundEffectsEnabled) {
+        playWrongSound();
+      }
     }
 
     const nextIndex = questionIndex + 1;
@@ -373,6 +383,11 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
 
   // Determine game results
   const handleMatchFinished = async (finalData: any) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
     setGameState('ended');
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -460,6 +475,11 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
 
   // Cancel matchmaking search
   const handleCancelSearch = async () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
     setIsCanceled(true);
     setGameState('idle');
     try {
@@ -480,14 +500,30 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
           <p className="text-slate-400 text-xs">Real-time competitive math battle ground by Jesse Rock Math!</p>
         </div>
         
-        {gameState === 'idle' && (
-          <button 
-            onClick={onExit}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const newMutedState = !isMuted;
+              setIsMuted(newMutedState);
+              setGlobalMuted(newMutedState);
+              if (audioRef.current) {
+                audioRef.current.muted = newMutedState;
+              }
+            }}
+            className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer"
+            title={isMuted ? "Unmute Music" : "Mute Music"}
           >
-            <ArrowLeft size={14} /> Exit Arena
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
-        )}
+          {gameState === 'idle' && (
+            <button 
+              onClick={onExit}
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft size={14} /> Exit Arena
+            </button>
+          )}
+        </div>
       </div>
 
       {/* State views */}
@@ -882,6 +918,7 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
           </motion.div>
         )}
       </AnimatePresence>
+      <audio ref={audioRef} src="/rock-bgm.mp3" loop />
     </div>
   );
 }

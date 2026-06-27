@@ -17,6 +17,7 @@ import {
   ADMIN_SEED_ITEMS, 
   ShopItem 
 } from '../lib/shopCatalog';
+import { playBuySound } from '../lib/audioUtils';
 import AvatarPreview from './AvatarPreview';
 import { 
   Sparkles, 
@@ -279,6 +280,7 @@ export default function RockShop({ userId, role = 'student', onNavigateToTab }: 
       setCelebratedItem(item);
       setShowConfetti(true);
       playRockSound('win');
+      playBuySound();
 
     } catch (err: any) {
       console.error("Atomic transaction failed:", err);

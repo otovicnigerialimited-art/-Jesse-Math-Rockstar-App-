@@ -45,6 +45,18 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
   const submitAnswer = () => {
     if (userInput === '') return;
 
+    if (userInput.length > 30) {
+      alert("Input too long! Keep your math response short.");
+      return;
+    }
+
+    const badWords = ["ignore", "override", "system prompt", "instruction", "developer role"];
+    const containsInjection = badWords.some(word => userInput.toLowerCase().includes(word));
+    if (containsInjection) {
+      console.log("Potential prompt injection blocked!");
+      return;
+    }
+
     const isCorrect = userInput.trim().split(' ').join('') === String(currentProblem.answer);
     setTotalQuestions(prev => prev + 1);
 

@@ -318,6 +318,18 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
     e.preventDefault();
     if (userInput.trim() === '' || questionIndex >= 20) return;
 
+    if (userInput.length > 30) {
+      alert("Input too long! Keep your math response short.");
+      return;
+    }
+
+    const badWords = ["ignore", "override", "system prompt", "instruction", "developer role"];
+    const containsInjection = badWords.some(word => userInput.toLowerCase().includes(word));
+    if (containsInjection) {
+      console.log("Potential prompt injection blocked!");
+      return;
+    }
+
     const currentQ = questions[questionIndex];
     const isCorrect = userInput.trim() === String(currentQ.answer);
     

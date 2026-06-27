@@ -70,6 +70,18 @@ export default function LearnArena({ onExit, onFinish }: LearnArenaProps) {
 
   const submitAnswer = () => {
     if (userInput.trim() === '') return;
+
+    if (userInput.length > 30) {
+      alert("Input too long! Keep your math response short.");
+      return;
+    }
+
+    const badWords = ["ignore", "override", "system prompt", "instruction", "developer role"];
+    const containsInjection = badWords.some(word => userInput.toLowerCase().includes(word));
+    if (containsInjection) {
+      console.log("Potential prompt injection blocked!");
+      return;
+    }
     
     const currentQuestion = questions[currentIndex];
     const isCorrect = userInput.trim().toLowerCase() === String(currentQuestion.answer).trim().toLowerCase();

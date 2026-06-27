@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  // Replace this with your actual live Vercel URL (e.g., https://vercel.app)
   const baseUrl = 'https://vercel.app'
   const now = new Date()
 

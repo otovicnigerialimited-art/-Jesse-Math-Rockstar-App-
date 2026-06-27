@@ -50,8 +50,28 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
   const [onlinePlayers, setOnlinePlayers] = useState<any[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const queueDocRef = doc(db, "matchmaking_queue", currentUser.uid);
+
+  // Resize Observer for responsive scaling
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (containerRef.current) {
+          containerRef.current.style.setProperty('--arena-width', `${width}px`);
+          containerRef.current.style.setProperty('--arena-height', `${height}px`);
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // Real-time online real players registry scanner
   useEffect(() => {
@@ -320,22 +340,23 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
     const nextIndex = questionIndex + 1;
     const finished = nextIndex >= 20;
 
-    // Save our stats instantly in firestore so opponent sees it live!
-    try {
-      const fieldsToUpdate: any = {};
-      if (isPlayer1) {
-        fieldsToUpdate.player1Progress = nextIndex;
-        fieldsToUpdate.player1Correct = nextCorrectCount;
-        fieldsToUpdate.player1Finished = finished;
-      } else {
-        fieldsToUpdate.player2Progress = nextIndex;
-        fieldsToUpdate.player2Correct = nextCorrectCount;
-        fieldsToUpdate.player2Finished = finished;
+    // Save our stats instantly in firestore only if game is finished!
+    if (finished) {
+      try {
+        const fieldsToUpdate: any = {};
+        if (isPlayer1) {
+          fieldsToUpdate.player1Progress = nextIndex;
+          fieldsToUpdate.player1Correct = nextCorrectCount;
+          fieldsToUpdate.player1Finished = finished;
+        } else {
+          fieldsToUpdate.player2Progress = nextIndex;
+          fieldsToUpdate.player2Correct = nextCorrectCount;
+          fieldsToUpdate.player2Finished = finished;
+        }
+        await updateDoc(doc(db, "arena_games", gameId), fieldsToUpdate);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `arena_games/${gameId}`);
       }
-
-      await updateDoc(doc(db, "arena_games", gameId), fieldsToUpdate);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `arena_games/${gameId}`);
     }
 
     setTimeout(() => {
@@ -449,7 +470,7 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto" ref={containerRef}>
       {/* 1. Header Row */}
       <div className="flex justify-between items-center">
         <div>
@@ -645,7 +666,7 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-400 block font-bold">Solved: {p1Progress}/20</span>
-                  <span className="text-sm font-black text-brand-primary">{p1Correct} Pts Correct</span>
+                  <span className="text-sm font-black text-brand-primary" style={{ willChange: 'transform', transform: 'translate3d(0,0,0)' }}>{p1Correct} Pts Correct</span>
                 </div>
               </div>
 
@@ -662,7 +683,7 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-400 block font-bold">Solved: {p2Progress}/20</span>
-                  <span className="text-sm font-black text-violet-400">{p2Correct} Pts Correct</span>
+                  <span className="text-sm font-black text-violet-400" style={{ willChange: 'transform', transform: 'translate3d(0,0,0)' }}>{p2Correct} Pts Correct</span>
                 </div>
               </div>
             </div>
@@ -674,7 +695,7 @@ export default function ArenaMatches({ currentUser, onExit, soundEffectsEnabled,
                 <span className={cn(
                   "font-mono text-xl font-black",
                   timeLeft < 30 ? "text-red-500 animate-pulse" : "text-slate-200"
-                )}>
+                )} style={{ willChange: 'transform', transform: 'translate3d(0,0,0)' }}>
                   {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                 </span>
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Limit: 5 min</span>

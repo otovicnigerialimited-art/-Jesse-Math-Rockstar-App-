@@ -6,13 +6,14 @@ import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { initializeApp as initializeServerFirebase } from "firebase/app";
 import { getFirestore as getServerFirestore, doc as serverDoc, getDoc as serverGetDoc } from "firebase/firestore";
+import crypto from "crypto";
 
 // Load environment variables securely
 dotenv.config();
 
 // Initialize Firestore on the server side for secure document role validation
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyC9osCI680YaE-HFoj-g8OuA63iVpJjaNM",
+  apiKey: process.env.VITE_FIREBASE_API_KEY || "",
   authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "silver-linker-scf5x.firebaseapp.com",
   projectId: process.env.VITE_FIREBASE_PROJECT_ID || "silver-linker-scf5x",
   storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "silver-linker-scf5x.firebasestorage.app",
@@ -124,6 +125,16 @@ async function startServer() {
 
   // JSON request body parser with payload limit (protect against huge JSON payload attacks)
   app.use(express.json({ limit: "2mb" }));
+
+  // Apply Security Headers
+  app.use((req, res, next) => {
+    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://google.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebase.com https://*.firebaseapp.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    next();
+  });
 
   // Global rate limiter to protect all endpoints from DDoS/abuse in production
   const globalLimiter = rateLimit({
@@ -278,6 +289,56 @@ CRITICAL SECURITY CONSTRAINT: Do not include any private user context, real name
         success: false,
         error: "An unexpected error occurred while processing the math challenge. Please try again."
       });
+    }
+  });
+
+  // Cryptographically secured Hint/AI endpoint
+  app.post("/api/gemini/hint", async (req, res) => {
+    try {
+      const { problem, userPrompt, score, username, timestamp, clientSignature } = req.body;
+
+      // Boundary check to stop bot spam from overloading memory
+      if (!problem || !userPrompt) {
+        return res.status(400).json({ error: 'Missing data.' });
+      }
+      if (userPrompt.length > 250 || problem.length > 100) {
+        return res.status(400).json({ error: 'Input text length limit exceeded.' });
+      }
+
+      // Strip angle brackets to stop AI prompt injection breakouts
+      const cleanProblem = String(problem).replace(/[<>]/g, '');
+      const cleanUserPrompt = String(userPrompt).replace(/[<>]/g, '');
+
+      // Cryptographic leaderboard check to stop score cheating
+      if (score !== undefined && clientSignature) {
+        const secret = process.env.LEADERBOARD_SECRET || "default_dev_secret_key";
+        const expectedSignature = crypto
+          .createHmac('sha256', secret)
+          .update(`${username}:${score}:${timestamp}`)
+          .digest('hex');
+
+        if (!crypto.timingSafeEqual(Buffer.from(clientSignature), Buffer.from(expectedSignature))) {
+          return res.status(403).json({ error: 'Security validation failed.' });
+        }
+      }
+
+      // Call Gemini entirely from the hidden server backend
+      const ai = getAiClient();
+      const secureContextPayload = `<math_data>${cleanProblem}</math_data>\nUser Request: ${cleanUserPrompt}`;
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: secureContextPayload,
+        config: {
+          systemInstruction: "You are a helpful math coach for kids. Only provide hints, never the final answer."
+        }
+      });
+      
+      return res.status(200).json({ success: true, data: response.text });
+
+    } catch (error: any) {
+      console.error("Internal Security Log:", error.message);
+      return res.status(500).json({ error: 'An unexpected processing error occurred.' });
     }
   });
 

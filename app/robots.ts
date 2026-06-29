@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://vercel.app',
+    sitemap: 'https://jesse-math-rockstar-app.vercel.app/sitemap.xml',
   }
 }

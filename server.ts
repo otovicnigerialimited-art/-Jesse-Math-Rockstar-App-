@@ -13,7 +13,7 @@ dotenv.config();
 
 // Initialize Firestore on the server side for secure document role validation
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "",
+  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyC9osCI680YaE-HFoj-g8OuA63iVpJjaNM",
   authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "silver-linker-scf5x.firebaseapp.com",
   projectId: process.env.VITE_FIREBASE_PROJECT_ID || "silver-linker-scf5x",
   storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "silver-linker-scf5x.firebasestorage.app",
@@ -128,7 +128,7 @@ async function startServer() {
 
   // Apply Security Headers
   app.use((req, res, next) => {
-    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://google.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebase.com https://*.firebaseapp.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';");
+    res.setHeader("Content-Security-Policy", "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; connect-src 'self' *;");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");

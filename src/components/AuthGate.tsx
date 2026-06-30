@@ -32,7 +32,7 @@ import {
   Globe,
   BookOpen
 } from 'lucide-react';
-import jesseRockLogo from '../assets/images/jesse_rock_logo_1782041250458.jpg';
+// import removed
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { 
@@ -802,7 +802,7 @@ export default function AuthGate({ onAuthSuccess, onGuestPlay }: AuthGateProps) 
               whileHover={{ scale: 1.1, rotate: 12 }}
               className="w-16 h-16 rounded-[1.25rem] overflow-hidden shadow-[0_0_20px_rgba(236,72,153,0.3)] border border-white/10 mx-auto cursor-pointer"
             >
-              <img src={jesseRockLogo} alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src="/jesse_rock_logo.jpg" alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             </motion.div>
             
             <h1 className="text-2xl font-display font-black tracking-tight text-white leading-none mt-2">

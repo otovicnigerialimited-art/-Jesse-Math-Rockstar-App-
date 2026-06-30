@@ -28,7 +28,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt).*$)",
       "destination": "/index.html"
     }
   ]

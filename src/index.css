@@ -115,6 +115,7 @@
   pointer-events: none;
   animation: floatUp linear infinite;
   opacity: 0;
+  will-change: transform, opacity;
 }
 
 .scrollbar-thin-custom::-webkit-scrollbar {

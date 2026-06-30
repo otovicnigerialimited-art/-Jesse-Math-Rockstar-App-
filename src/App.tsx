@@ -26,33 +26,34 @@ import {
   ShoppingBag,
   Flame
 } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import Leaderboard from './components/Leaderboard';
-import Quiz from './components/Quiz';
-import LearningHub from './components/LearningHub';
-import BadgesSection, { getWeeklyData } from './components/BadgesSection';
-import RockShop from './components/RockShop';
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const Leaderboard = React.lazy(() => import('./components/Leaderboard'));
+const Quiz = React.lazy(() => import('./components/Quiz'));
+const LearningHub = React.lazy(() => import('./components/LearningHub'));
+import { getWeeklyData } from './components/BadgesSection';
+const BadgesSection = React.lazy(() => import('./components/BadgesSection'));
+const RockShop = React.lazy(() => import('./components/RockShop'));
 import { UserStats, Difficulty, Lesson } from './types';
 import { cn } from './lib/utils';
 import { db } from './lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, increment } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from './lib/firestoreUtils';
-import AuthGate from './components/AuthGate';
-import ArenaMatches from './components/ArenaMatches';
-import HomeLanding from './components/HomeLanding';
-import RulesPage from './components/RulesPage';
-import TermsPage from './components/TermsPage';
-import DeveloperPage from './components/DeveloperPage';
-import FamilyPage from './components/FamilyPage';
-import LearnArena from './components/LearnArena';
-import SchoolDashboards from './components/SchoolDashboards';
-import CreatorPanel from './components/CreatorPanel';
+const AuthGate = React.lazy(() => import('./components/AuthGate'));
+const ArenaMatches = React.lazy(() => import('./components/ArenaMatches'));
+const HomeLanding = React.lazy(() => import('./components/HomeLanding'));
+const RulesPage = React.lazy(() => import('./components/RulesPage'));
+const TermsPage = React.lazy(() => import('./components/TermsPage'));
+const DeveloperPage = React.lazy(() => import('./components/DeveloperPage'));
+const FamilyPage = React.lazy(() => import('./components/FamilyPage'));
+const LearnArena = React.lazy(() => import('./components/LearnArena'));
+const SchoolDashboards = React.lazy(() => import('./components/SchoolDashboards'));
+const CreatorPanel = React.lazy(() => import('./components/CreatorPanel'));
 import AvatarPreview from './components/AvatarPreview';
 import { updateSchoolStudentProgress } from './lib/schoolDb';
-import ConvertAccountModal from './components/ConvertAccountModal';
+const ConvertAccountModal = React.lazy(() => import('./components/ConvertAccountModal'));
 
 
-import jesseRockLogo from './assets/images/jesse_rock_logo_1782041250458.jpg';
+// Logo removed from static import
 
 const INITIAL_STATS: UserStats = {
   totalSolved: 0,
@@ -798,20 +799,28 @@ export default function App() {
 
   if (!authState.isAuthenticated) {
     return (
-      <AuthGate 
-        onAuthSuccess={(uname, matchedUid) => {
-          setUserDeviceId(matchedUid);
-          fetchAndSyncProfile(uname, matchedUid);
-        }}
-        onGuestPlay={() => {
-          const savedGuest = localStorage.getItem('guest_rockstar_stats');
-          if (savedGuest) {
-            setStats(JSON.parse(savedGuest));
-          } else {
-            setStats(INITIAL_STATS);
-          }
-          setAuthState({
-            isAuthenticated: true,
+      <React.Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+          <div className="text-center space-y-4">
+            <Loader2 className="animate-spin text-brand-primary w-12 h-12 mx-auto" strokeWidth={3} />
+            <p className="text-sm font-black tracking-wider text-slate-400">LOADING ARENA...</p>
+          </div>
+        </div>
+      }>
+        <AuthGate 
+          onAuthSuccess={(uname, matchedUid) => {
+            setUserDeviceId(matchedUid);
+            fetchAndSyncProfile(uname, matchedUid);
+          }}
+          onGuestPlay={() => {
+            const savedGuest = localStorage.getItem('guest_rockstar_stats');
+            if (savedGuest) {
+              setStats(JSON.parse(savedGuest));
+            } else {
+              setStats(INITIAL_STATS);
+            }
+            setAuthState({
+              isAuthenticated: true,
             isChecking: false,
             isCookieBlocked: false,
             message: "Guest session started",
@@ -822,15 +831,22 @@ export default function App() {
           setActiveTab('quiz');
         }}
       />
+      </React.Suspense>
     );
   }
 
   if (authState.role === 'teacher' || authState.role === 'admin') {
     return (
-      <SchoolDashboards 
-        authState={authState} 
-        onSignOut={handleSignOut} 
-      />
+      <React.Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+          <Loader2 className="animate-spin text-brand-primary w-12 h-12" />
+        </div>
+      }>
+        <SchoolDashboards 
+          authState={authState} 
+          onSignOut={handleSignOut} 
+        />
+      </React.Suspense>
     );
   }
 
@@ -880,7 +896,7 @@ export default function App() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(34,211,238,0.5)] border border-cyan-500/50 shrink-0">
-                  <img src={jesseRockLogo} alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img src="/jesse_rock_logo.jpg" alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
                 <h1 className="text-2xl font-display font-black tracking-tight leading-tight wiggle-hover cursor-pointer">
                   JESSE ROCK<br />
@@ -1015,7 +1031,7 @@ export default function App() {
           <div className="lg:hidden flex items-center justify-between p-4 bg-slate-900/90 border border-white/10 rounded-2xl mb-6 backdrop-blur-md sticky top-0 z-30 shadow-lg shadow-black/40">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_10px_rgba(34,211,238,0.5)] shrink-0 border border-cyan-500/50">
-                <img src={jesseRockLogo} alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <img src="/jesse_rock_logo.jpg" alt="Jesse Rock Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               </div>
               <span className="text-xs font-display font-black tracking-tight leading-none text-white wiggle-hover cursor-pointer">
                 JESSE ROCK<br />
@@ -1121,15 +1137,21 @@ export default function App() {
             </motion.div>
           )}
 
-          <AnimatePresence mode="wait">
-            {activeTab === 'home' && (
-              <motion.div
-                key="home"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-              >
-                <HomeLanding 
+          <React.Suspense fallback={
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
+              <Loader2 className="w-12 h-12 animate-spin text-brand-primary mb-4" />
+              <p className="text-sm font-black text-slate-400 tracking-wider">LOADING ARENA...</p>
+            </div>
+          }>
+            <AnimatePresence mode="wait">
+              {activeTab === 'home' && (
+                <motion.div
+                  key="home"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                >
+                  <HomeLanding 
                   username={authState.username || "Young Genius"} 
                   stats={{
                     level: stats.level,
@@ -1354,6 +1376,7 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
+          </React.Suspense>
         </div>
       </main>
 

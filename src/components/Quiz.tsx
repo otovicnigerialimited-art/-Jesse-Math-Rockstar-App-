@@ -6,6 +6,7 @@ import { playCorrectSound, playWrongSound } from '../lib/audioUtils';
 import { Difficulty, Problem, UserStats } from '../types';
 import { cn } from '../lib/utils';
 import confetti from 'canvas-confetti';
+import { useAdaptiveLogic } from '../hooks/useAdaptiveLogic';
 
 interface QuizProps {
   difficulty: Difficulty;
@@ -15,15 +16,34 @@ interface QuizProps {
   onConvertProgress?: () => void;
 }
 
+const getInitialLevel = (diff: Difficulty) => {
+  switch (diff) {
+    case 'easy': return 1;
+    case 'medium': return 2;
+    case 'hard': return 3;
+    case 'extreme': return 4;
+    default: return 1;
+  }
+};
+
+const getDifficultyForLevel = (level: number): Difficulty => {
+  if (level <= 1) return 'easy';
+  if (level === 2) return 'medium';
+  if (level === 3) return 'hard';
+  return 'extreme';
+};
+
 export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertProgress }: QuizProps) {
-  const [currentProblem, setCurrentProblem] = useState<Problem>(generateProblem(difficulty));
+  const adaptiveLogic = useAdaptiveLogic(getInitialLevel(difficulty));
+  const currentDifficulty = getDifficultyForLevel(adaptiveLogic.currentLevel);
+
+  const [currentProblem, setCurrentProblem] = useState<Problem>(generateProblem(currentDifficulty));
 
   const [userInput, setUserInput] = useState('');
   const [score, setScore] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [activeFeedbackTag, setActiveFeedbackTag] = useState<string | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
@@ -40,7 +60,8 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, [currentProblem]);
+    adaptiveLogic.startQuestionTimer();
+  }, [currentProblem, adaptiveLogic]);
 
   const submitAnswer = () => {
     if (userInput === '') return;
@@ -59,10 +80,11 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
 
     const isCorrect = userInput.trim().split(' ').join('') === String(currentProblem.answer);
     setTotalQuestions(prev => prev + 1);
+    
+    const evalResult = adaptiveLogic.evaluateAnswer(isCorrect);
 
     if (isCorrect) {
       setScore(prev => prev + 1);
-      setStreak(prev => prev + 1);
       setFeedback('correct');
       playCorrectSound();
 
@@ -73,30 +95,36 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
         "🍌 That answer was bananas!",
         "🍕 You earn 100 virtual pizza slices!"
       ];
-      const randomTag = funnyTaglines[Math.floor(Math.random() * funnyTaglines.length)];
+      // Override funny tag if there's an adaptive message like "LEVEL UP!"
+      const randomTag = (evalResult.message && evalResult.message.includes("LEVEL UP")) 
+        ? evalResult.message 
+        : funnyTaglines[Math.floor(Math.random() * funnyTaglines.length)];
       setActiveFeedbackTag(randomTag);
 
-      if (streak + 1 >= 5) {
+      if (evalResult.winStreak >= 5 || (evalResult.message && evalResult.message.includes("LEVEL UP"))) {
         confetti({
           particleCount: 30,
           spread: 40,
           origin: { y: 0.6 },
           colors: ['#f43f5e', '#fbbf24']
         });
-        if (isGuest) {
+        if (isGuest && evalResult.winStreak >= 5) {
           setShowMilestone(true);
         }
       }
     } else {
-      setStreak(0);
       setFeedback('wrong');
       playWrongSound();
+      
+      if (evalResult.message && evalResult.message.includes("Difficulty Adjusted")) {
+        setActiveFeedbackTag("Difficulty Adjusted! Take it easy.");
+      }
     }
 
     setTimeout(() => {
       setFeedback(null);
       setUserInput('');
-      setCurrentProblem(generateProblem(difficulty));
+      setCurrentProblem(generateProblem(getDifficultyForLevel(evalResult.level)));
       setActiveFeedbackTag(null);
     }, 1300);
   };
@@ -120,7 +148,7 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [userInput, currentProblem, isGameOver, feedback, streak]);
+  }, [userInput, currentProblem, isGameOver, feedback, adaptiveLogic.winStreak]);
 
   if (isGameOver) {
     const xpGained = calculateXP(true, difficulty) * score;
@@ -155,7 +183,7 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
               setTimeLeft(60);
               setScore(0);
               setTotalQuestions(0);
-              setStreak(0);
+              adaptiveLogic.reset();
               setCurrentProblem(generateProblem(difficulty));
             }}
             className="flex-1 py-4 btn-3d-blue font-bold flex items-center justify-center gap-2"
@@ -180,8 +208,8 @@ export default function Quiz({ difficulty, onFinish, onExit, isGuest, onConvertP
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <Zap className={cn("text-brand-accent transition-all", streak > 0 ? "scale-110" : "opacity-30")} />
-            <span className="text-xl font-bold">{streak}</span>
+            <Zap className={cn("text-brand-accent transition-all", adaptiveLogic.winStreak > 0 ? "scale-110" : "opacity-30")} />
+            <span className="text-xl font-bold">{adaptiveLogic.winStreak}</span>
           </div>
           <div className="h-8 w-px bg-white/20" />
           <span className="text-xl font-bold">{score} pts</span>
